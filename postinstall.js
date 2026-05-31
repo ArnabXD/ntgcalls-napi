@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const REPO = "ArnabXD/ntgcalls-rust";
+const REPO = "ArnabXD/ntgcalls-napi";
 
 function getPlatformKey() {
   const { platform, arch } = process;
