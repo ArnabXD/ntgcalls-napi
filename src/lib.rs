@@ -90,6 +90,13 @@ extern "C" {
     pub fn ntg_mute(ptr: usize, chat_id: i64, future: NtgAsyncStruct) -> i32;
     pub fn ntg_unmute(ptr: usize, chat_id: i64, future: NtgAsyncStruct) -> i32;
     pub fn ntg_stop(ptr: usize, chat_id: i64, future: NtgAsyncStruct) -> i32;
+    pub fn ntg_time(
+        ptr: usize,
+        chat_id: i64,
+        mode: i32,
+        time: *mut i64,
+        future: NtgAsyncStruct,
+    ) -> i32;
 
     pub fn ntg_on_stream_end(ptr: usize, cb: NtgStreamCallback, user_data: *mut c_void) -> i32;
     pub fn ntg_on_connection_change(
@@ -112,6 +119,13 @@ struct AsyncContext {
     _keep_alive: Option<Box<dyn std::any::Any + Send + Sync>>,
 }
 
+struct AsyncContextI64 {
+    tx: oneshot::Sender<std::result::Result<i64, String>>,
+    error_code: i32,
+    error_message: *mut c_char,
+    result: i64,
+}
+
 unsafe extern "C" fn rust_async_callback(user_data: *mut c_void) {
     if user_data.is_null() {
         return;
@@ -131,6 +145,31 @@ unsafe extern "C" fn rust_async_callback(user_data: *mut c_void) {
                 free(context.result_buffer as *mut c_void);
             }
             let _ = context.tx.send(Ok(res));
+        } else {
+            let err_msg = if !context.error_message.is_null() {
+                let c_str = CStr::from_ptr(context.error_message);
+                let msg = c_str.to_string_lossy().into_owned();
+                free(context.error_message as *mut c_void);
+                msg
+            } else {
+                format!("NTgCalls async error code: {}", context.error_code)
+            };
+            let _ = context.tx.send(Err(err_msg));
+        }
+    }));
+}
+
+unsafe extern "C" fn rust_async_callback_i64(user_data: *mut c_void) {
+    if user_data.is_null() {
+        return;
+    }
+
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        std::sync::atomic::fence(Ordering::Acquire);
+        let context = Box::from_raw(user_data as *mut AsyncContextI64);
+
+        if context.error_code == 0 {
+            let _ = context.tx.send(Ok(context.result));
         } else {
             let err_msg = if !context.error_message.is_null() {
                 let c_str = CStr::from_ptr(context.error_message);
@@ -549,6 +588,60 @@ impl NtgCalls {
     pub async fn stop(&self, chat_id: i64) -> Result<()> {
         self.run_simple_async_op(chat_id, |h, cid, a| unsafe { ntg_stop(h, cid, a) })
             .await
+    }
+
+    #[napi]
+    pub async fn time(&self, chat_id: i64, mode: Option<i32>) -> Result<i64> {
+        let handle = self.handle;
+        let pending = Arc::clone(&self.pending_ops);
+        let stream_mode = mode.unwrap_or(0);
+        let (tx, rx) = oneshot::channel::<std::result::Result<i64, String>>();
+
+        let context = Box::into_raw(Box::new(AsyncContextI64 {
+            tx,
+            error_code: 0,
+            error_message: std::ptr::null_mut(),
+            result: 0,
+        }));
+
+        let ntg_async = NtgAsyncStruct {
+            user_data: context as *mut c_void,
+            error_code: unsafe { std::ptr::addr_of_mut!((*context).error_code) },
+            error_message: unsafe { std::ptr::addr_of_mut!((*context).error_message) },
+            promise: Some(rust_async_callback_i64),
+        };
+
+        let context_addr = context as usize;
+
+        pending.fetch_add(1, Ordering::Relaxed);
+        let result_blocking = tokio::task::spawn_blocking(move || unsafe {
+            let ctx = context_addr as *mut AsyncContextI64;
+            let rc = ntg_time(
+                handle,
+                chat_id,
+                stream_mode,
+                std::ptr::addr_of_mut!((*ctx).result),
+                ntg_async,
+            );
+            pending.fetch_sub(1, Ordering::Release);
+            if rc != 0 {
+                let _ = Box::from_raw(ctx);
+                return Err(Error::from_reason(format!(
+                    "ntg_time returned error code {}",
+                    rc
+                )));
+            }
+            Ok(())
+        })
+        .await
+        .map_err(|_| Error::from_reason("Tokio spawn_blocking failed"))?;
+        result_blocking?;
+
+        let result = rx
+            .await
+            .map_err(|_| Error::from_reason("Async operation cancelled"))?;
+
+        result.map_err(Error::from_reason)
     }
 
     // ── Helper Async Executor ──────────────────────────────────────────────────

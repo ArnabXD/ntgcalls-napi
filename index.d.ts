@@ -26,4 +26,6 @@ export class NtgCalls {
   unmute(chatId: number): Promise<void>;
 
   stop(chatId: number): Promise<void>;
+
+  time(chatId: number, mode?: number): Promise<number>;
 }
