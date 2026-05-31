@@ -33,6 +33,8 @@ unsafe impl Sync for NtgAudioDescriptionStruct {}
 
 #[repr(C)]
 pub struct NtgVideoDescriptionStruct {
+    pub media_source: i32,
+    pub input: *const c_char,
     pub width: i16,
     pub height: i16,
     pub fps: u8,
@@ -58,8 +60,18 @@ pub type NtgStreamCallback = unsafe extern "C" fn(
     user_data: *mut c_void,
 );
 
-pub type NtgConnectionCallback =
-    unsafe extern "C" fn(pointer: usize, chat_id: i64, info: u64, user_data: *mut c_void);
+#[repr(C)]
+pub struct NtgNetworkInfoStruct {
+    pub kind: i32,
+    pub state: i32,
+}
+
+pub type NtgConnectionCallback = unsafe extern "C" fn(
+    pointer: usize,
+    chat_id: i64,
+    info: NtgNetworkInfoStruct,
+    user_data: *mut c_void,
+);
 
 extern "C" {
     pub fn ntg_init() -> usize;
@@ -154,7 +166,8 @@ unsafe extern "C" fn raw_stream_end_callback(
     _stream_device: i32,
     user_data: *mut c_void,
 ) {
-    if user_data.is_null() {
+    // chatId=0 is emitted by libntgcalls as a spurious event during source hot-swap; drop it.
+    if user_data.is_null() || chat_id == 0 {
         return;
     }
     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -173,7 +186,7 @@ unsafe extern "C" fn raw_stream_end_callback(
 unsafe extern "C" fn raw_connection_callback(
     _pointer: usize,
     chat_id: i64,
-    info: u64,
+    info: NtgNetworkInfoStruct,
     user_data: *mut c_void,
 ) {
     if user_data.is_null() {
@@ -184,9 +197,7 @@ unsafe extern "C" fn raw_connection_callback(
             user_data as *const Mutex<Option<ThreadsafeFunction<(BigInt, i32, i32), ()>>>;
         if let Ok(guard) = (*mutex_ptr).lock() {
             if let Some(tsfn) = guard.as_ref() {
-                let kind = (info & 0xffff) as i32;
-                let state = ((info >> 16) & 0xffff) as i32;
-                let event_data = (BigInt::from(chat_id), kind, state);
+                let event_data = (BigInt::from(chat_id), info.kind, info.state);
                 tsfn.call(Ok(event_data), ThreadsafeFunctionCallMode::NonBlocking);
             }
         }
