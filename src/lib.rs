@@ -1,7 +1,5 @@
 use napi::bindgen_prelude::*;
-use napi::threadsafe_function::{
-    ThreadSafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
-};
+use napi::threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use napi_derive::napi;
 use std::ffi::{c_char, c_void, CStr, CString};
 use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
@@ -160,10 +158,13 @@ unsafe extern "C" fn raw_stream_end_callback(
         return;
     }
     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let mutex_ptr = user_data as *const Mutex<Option<ThreadsafeFunction<i64>>>;
+        let mutex_ptr = user_data as *const Mutex<Option<ThreadsafeFunction<BigInt, ()>>>;
         if let Ok(guard) = (*mutex_ptr).lock() {
             if let Some(tsfn) = guard.as_ref() {
-                tsfn.call(Ok(chat_id), ThreadsafeFunctionCallMode::NonBlocking);
+                tsfn.call(
+                    Ok(BigInt::from(chat_id)),
+                    ThreadsafeFunctionCallMode::NonBlocking,
+                );
             }
         }
     }));
@@ -179,12 +180,13 @@ unsafe extern "C" fn raw_connection_callback(
         return;
     }
     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let mutex_ptr = user_data as *const Mutex<Option<ThreadsafeFunction<Vec<i64>>>>;
+        let mutex_ptr =
+            user_data as *const Mutex<Option<ThreadsafeFunction<(BigInt, i32, i32), ()>>>;
         if let Ok(guard) = (*mutex_ptr).lock() {
             if let Some(tsfn) = guard.as_ref() {
                 let kind = (info & 0xffff) as i32;
                 let state = ((info >> 16) & 0xffff) as i32;
-                let event_data = vec![chat_id, kind as i64, state as i64];
+                let event_data = (BigInt::from(chat_id), kind, state);
                 tsfn.call(Ok(event_data), ThreadsafeFunctionCallMode::NonBlocking);
             }
         }
@@ -194,12 +196,13 @@ unsafe extern "C" fn raw_connection_callback(
 // ── NtgCalls Class ───────────────────────────────────────────────────────────
 
 #[napi]
+#[allow(clippy::type_complexity)]
 pub struct NtgCalls {
     handle: usize,
-    stream_end_cb: Arc<Mutex<Option<ThreadsafeFunction<i64>>>>,
-    connection_cb: Arc<Mutex<Option<ThreadsafeFunction<Vec<i64>>>>>,
-    stream_end_cb_ptr: AtomicPtr<Mutex<Option<ThreadsafeFunction<i64>>>>,
-    connection_cb_ptr: AtomicPtr<Mutex<Option<ThreadsafeFunction<Vec<i64>>>>>,
+    stream_end_cb: Arc<Mutex<Option<ThreadsafeFunction<BigInt, ()>>>>,
+    connection_cb: Arc<Mutex<Option<ThreadsafeFunction<(BigInt, i32, i32), ()>>>>,
+    stream_end_cb_ptr: AtomicPtr<Mutex<Option<ThreadsafeFunction<BigInt, ()>>>>,
+    connection_cb_ptr: AtomicPtr<Mutex<Option<ThreadsafeFunction<(BigInt, i32, i32), ()>>>>,
     pending_ops: Arc<AtomicUsize>,
 }
 
@@ -225,13 +228,12 @@ impl NtgCalls {
     #[napi(js_name = "on_stream_end")]
     pub fn on_stream_end(
         &self,
-        #[napi(ts_arg_type = "(chatId: bigint) => void")] cb: JsFunction,
+        #[napi(ts_arg_type = "(chatId: bigint) => void")] cb: Function<BigInt, ()>,
     ) -> Result<()> {
-        let tsfn: ThreadsafeFunction<i64> =
-            cb.create_threadsafe_function(0, |ctx: ThreadSafeCallContext<i64>| {
-                let js_chat_id = ctx.env.create_bigint_from_i64(ctx.value)?.into_unknown()?;
-                Ok(vec![js_chat_id])
-            })?;
+        let tsfn: ThreadsafeFunction<BigInt, ()> = cb
+            .build_threadsafe_function()
+            .callee_handled::<true>()
+            .build()?;
 
         let mut guard = self
             .stream_end_cb
@@ -270,19 +272,15 @@ impl NtgCalls {
     #[napi(js_name = "on_connection_change")]
     pub fn on_connection_change(
         &self,
-        #[napi(ts_arg_type = "(chatId: bigint, kind: number, state: number) => void")]
-        cb: JsFunction,
+        #[napi(ts_arg_type = "(chatId: bigint, kind: number, state: number) => void")] cb: Function<
+            (BigInt, i32, i32),
+            (),
+        >,
     ) -> Result<()> {
-        let tsfn: ThreadsafeFunction<Vec<i64>> =
-            cb.create_threadsafe_function(0, |ctx: ThreadSafeCallContext<Vec<i64>>| {
-                let chat_id = ctx
-                    .env
-                    .create_bigint_from_i64(ctx.value[0])?
-                    .into_unknown()?;
-                let kind = ctx.env.create_int32(ctx.value[1] as i32)?.into_unknown();
-                let state = ctx.env.create_int32(ctx.value[2] as i32)?.into_unknown();
-                Ok(vec![chat_id, kind, state])
-            })?;
+        let tsfn: ThreadsafeFunction<(BigInt, i32, i32), ()> = cb
+            .build_threadsafe_function()
+            .callee_handled::<true>()
+            .build()?;
 
         let mut guard = self
             .connection_cb
