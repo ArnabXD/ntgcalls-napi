@@ -132,6 +132,7 @@ jobs:
         run: npm install
 
       - name: Compile C-bindings (Rust Addon)
+        shell: bash
         run: |
           if [ "${{ matrix.platform.target }}" != "" ]; then
             cargo build --release --target ${{ matrix.platform.target }}
