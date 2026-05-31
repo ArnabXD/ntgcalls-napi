@@ -1,9 +1,19 @@
 {
   "name": "ntgcalls-napi",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Thread-safe Rust N-API native bindings for libntgcalls",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
-  "private": false
+  "private": false,
+  "scripts": {
+    "prepare": "lefthook install",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "cargo fmt"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "latest",
+    "lefthook": "latest"
+  }
 }
