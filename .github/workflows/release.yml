@@ -61,7 +61,10 @@ jobs:
         if: matrix.platform.name == 'linux-x64'
         run: |
           mkdir -p lib
-          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
+          TAG=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
+          if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
+            TAG="v2.1.0"
+          fi
           curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-x86_64-shared_libs.zip"
           unzip -jo libs.zip "lib/libntgcalls.so" -d lib/
           rm libs.zip
@@ -70,7 +73,10 @@ jobs:
         if: matrix.platform.name == 'linux-arm64'
         run: |
           mkdir -p lib
-          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
+          TAG=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
+          if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
+            TAG="v2.1.0"
+          fi
           curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-arm64-shared_libs.zip"
           unzip -jo libs.zip "lib/libntgcalls.so" -d lib/
           rm libs.zip
@@ -79,7 +85,10 @@ jobs:
         if: matrix.platform.name == 'macos-arm64'
         run: |
           mkdir -p lib
-          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
+          TAG=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
+          if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
+            TAG="v2.1.0"
+          fi
           curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.macos-arm64-shared_libs.zip"
           unzip -jo libs.zip "lib/libntgcalls.dylib" -d lib/
           rm libs.zip
@@ -88,7 +97,16 @@ jobs:
         if: matrix.platform.name == 'windows-x64'
         shell: powershell
         run: |
-          $tag = (Invoke-RestMethod -Uri "https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest").tag_name
+          $headers = @{}
+          if ("${{ secrets.GITHUB_TOKEN }}") {
+            $headers["Authorization"] = "token ${{ secrets.GITHUB_TOKEN }}"
+          }
+          $tag = "v2.1.0"
+          try {
+            $tag = (Invoke-RestMethod -Uri "https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest" -Headers $headers).tag_name
+          } catch {
+            Write-Host "GitHub API rate limit or error, falling back to v2.1.0"
+          }
           Invoke-WebRequest -Uri "https://github.com/pytgcalls/ntgcalls/releases/download/${tag}/ntgcalls.windows-x86_64-shared_libs.zip" -OutFile "libs.zip"
           New-Item -ItemType Directory -Force -Path "lib"
           Expand-Archive -Path "libs.zip" -DestinationPath "temp_libs"
