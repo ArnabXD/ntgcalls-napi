@@ -1,6 +1,6 @@
 {
-  "name": "ntgcalls-napi",
-  "version": "0.1.0",
+  "name": "@arnabxd/ntgcalls-napi",
+  "version": "0.2.0",
   "description": "Thread-safe Rust N-API native bindings for libntgcalls",
   "main": "index.js",
   "types": "index.d.ts",
@@ -8,10 +8,20 @@
   "private": false,
   "scripts": {
     "prepare": "lefthook install",
+    "postinstall": "node postinstall.js",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "cargo fmt"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "postinstall.js"
+  ],
   "devDependencies": {
     "@biomejs/biome": "latest",
     "lefthook": "latest"

@@ -8,17 +8,31 @@ A Rust N-API native addon that wraps `libntgcalls` (a C WebRTC shared library) f
 
 ## Build
 
-`libntgcalls.so` (or `.dylib`/`.dll`) must be present in `./lib/` before building.
+`libntgcalls.so` (or `.dylib`/`.dll`) must be present in `./lib/` before building. Download it from the [pytgcalls/ntgcalls releases](https://github.com/pytgcalls/ntgcalls/releases/latest) and unzip the platform-appropriate shared-libs archive into `./lib/`.
 
 ```bash
 cargo build --release
 
 # Copy the compiled output to the loadable .node file
-cp target/release/libntgcalls.so ./ntgcalls.node   # Linux
-cp target/release/libntgcalls.dylib ./ntgcalls.node # macOS
+cp target/release/libntgcalls.so ./ntgcalls.node      # Linux
+cp target/release/libntgcalls.dylib ./ntgcalls.node   # macOS
+cp target/release/ntgcalls.dll ./ntgcalls.node        # Windows (output is .dll, not .so)
 ```
 
-`build.rs` sets linker search path to `./lib/` and embeds `$ORIGIN/lib` RPATH so the `.node` file resolves `libntgcalls` at runtime without `LD_LIBRARY_PATH`.
+`build.rs` sets linker search path to `./lib/` and embeds `$ORIGIN/lib` (Linux) / `@loader_path/lib` (macOS) RPATH so the `.node` file resolves `libntgcalls` at runtime without `LD_LIBRARY_PATH`.
+
+## Lint & format
+
+```bash
+cargo fmt --all              # format Rust
+cargo fmt --all -- --check   # check only (used in CI)
+cargo clippy --all-targets -- -D warnings   # lint Rust (zero warnings)
+cargo test --verbose         # run Rust test suite
+
+npm install                  # install JS dev tools (biome, lefthook)
+npx biome check .            # lint/format JS files
+npx biome check --write .    # auto-fix JS files
+```
 
 ## Architecture
 
@@ -30,10 +44,22 @@ The crate (`src/lib.rs`) has three layers:
 
 3. **N-API / JS layer** — `#[napi]` + `#[napi(constructor)]` macros (via `napi-derive`) expose the `NtgCalls` struct as a JS class. Event callbacks (`on_stream_end`, `on_connection_change`) use `ThreadsafeFunction` so that background C++ WebRTC threads can safely fire into the Node.js event loop.
 
-## Key invariant
+## Key invariants
 
-`NtgAsyncStruct.error_code` and `NtgAsyncStruct.error_message` are raw pointers into the `AsyncContext` box that is still heap-alive at the time of the C call. They must not be moved or dropped until `rust_async_callback` fires — this is why `context_addr` (a `usize`) is captured rather than the raw pointer directly.
+- `NtgAsyncStruct.error_code` and `NtgAsyncStruct.error_message` are raw pointers into the `AsyncContext` box that is still heap-alive at the time of the C call. They must not be moved or dropped until `rust_async_callback` fires — this is why `context_addr` (a `usize`) is captured rather than the raw pointer directly.
+
+- `on_stream_end` / `on_connection_change` register their C callback exactly once per `NtgCalls` instance (guarded by `compare_exchange` on an `AtomicPtr`). The `Arc<Mutex<Option<ThreadsafeFunction<…>>>>` holding the JS callback is leaked into a raw pointer and given to the C library; subsequent calls to the same `on_*` method just swap the `ThreadsafeFunction` inside the mutex. Both leaked `Arc` clones are reclaimed in `Drop` after `ntg_destroy` guarantees no further callbacks.
+
+- `Drop` spin-waits on `pending_ops` (an `AtomicUsize`) to reach zero before calling `ntg_destroy`, ensuring all in-flight `spawn_blocking` tasks have exited the C library.
+
+- `AsyncContext._keep_alive` stores `CString` and heap-allocated C structs that must remain valid until `rust_async_callback` fires. Do not reference them through the original stack-bound variable after passing to `spawn_blocking`.
 
 ## JS interface
 
 `index.js` is an ESM wrapper that `require()`s the `.node` file and re-exports `NtgCalls`. `index.d.ts` is the hand-written TypeScript declaration file — update it manually when the Rust API changes, since `napi-derive` does not auto-generate it here.
+
+The `set_audio_source` method always uses `media_source: 2` (SHELL) at 48 kHz mono; it is the only stream-source helper currently exposed to JS.
+
+## Release
+
+CI builds platform-specific `.node` files named `ntgcalls.<platform>.node` (e.g. `ntgcalls.linux-x64.node`) and attaches them to GitHub releases when a `v*` tag is pushed. The `libntgcalls` shared library is bundled at runtime in a `lib/` subdirectory beside the `.node` file, resolved via RPATH — consumers do not need to set `LD_LIBRARY_PATH`.
