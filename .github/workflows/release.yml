@@ -41,22 +41,22 @@ jobs:
           curl -L -o windows-x64.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.windows-x86_64-shared_libs.zip"
           unzip -jo windows-x64.zip "*.dll" "*.lib" -d dl/windows-x64/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: libntgcalls-linux-x64
           path: dl/linux-x64/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: libntgcalls-linux-arm64
           path: dl/linux-arm64/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: libntgcalls-macos-arm64
           path: dl/macos-arm64/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: libntgcalls-windows-x64
           path: dl/windows-x64/
@@ -107,7 +107,7 @@ jobs:
           rustup target add aarch64-unknown-linux-gnu
 
       - name: Download Pre-Extracted Shared Library Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: libntgcalls-${{ matrix.platform.name }}
           path: lib/
@@ -152,7 +152,7 @@ jobs:
           Copy-Item lib\*.${{ matrix.platform.lib_ext }} dist\lib\
           Compress-Archive -Force -Path dist\ntgcalls.node, dist\lib -DestinationPath ntgcalls-napi.${{ matrix.platform.name }}.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ntgcalls-napi-${{ matrix.platform.name }}
           path: ntgcalls-napi.${{ matrix.platform.name }}.zip
@@ -173,7 +173,7 @@ jobs:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           merge-multiple: true
 
@@ -192,4 +192,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to npm
-        run: npm publish --access public
+        run: npm publish --access public --ignore-scripts
