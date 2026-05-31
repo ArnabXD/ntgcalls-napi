@@ -1,0 +1,56 @@
+name: Rust CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    name: Lint & Test Crate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Rust Build
+        uses: swatinem/rust-cache@v2
+
+      # ── Download libntgcalls Shared Library (Required for compilation) ────────
+
+      - name: Install libntgcalls (Linux x64)
+        run: |
+          mkdir -p lib
+          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+          curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-x86_64-shared_libs.zip"
+          unzip -jo libs.zip "lib/libntgcalls.so" -d lib/
+          rm libs.zip
+
+      # ── Code Quality & Format Checks ─────────────────────────────────────────
+
+      - name: Verify Code Formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy Linter
+        run: cargo clippy --all-targets -- -D warnings
+
+      # ── Run Crate Test Suite ─────────────────────────────────────────────────
+
+      - name: Run Tests
+        run: cargo test --verbose

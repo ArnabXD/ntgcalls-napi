@@ -1,0 +1,21 @@
+# Lefthook configuration for ntgcalls-napi / ntgcalls-rust
+# https://github.com/evilmartians/lefthook
+
+pre-commit:
+  parallel: true
+  commands:
+    # 1. Format and Lint JS/TS/JSON files with Biome
+    biome:
+      glob: "*.{js,ts,json}"
+      run: bunx biome check --write {staged_files}
+      stage_fixed: true
+
+    # 2. Verify Rust Code Formatting
+    rustfmt:
+      glob: "*.rs"
+      run: cargo fmt --all -- --check
+
+    # 3. Run Clippy Linter on Rust Code
+    clippy:
+      glob: "*.rs"
+      run: cargo clippy --all-targets -- -D warnings

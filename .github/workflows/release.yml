@@ -1,0 +1,163 @@
+name: Standalone Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-native:
+    name: Build Native (${{ matrix.platform.name }})
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: linux-x64
+            os: ubuntu-latest
+            target: ""
+            asset_suffix: linux-x64.node
+          - name: linux-arm64
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            asset_suffix: linux-arm64.node
+          - name: macos-arm64
+            os: macos-latest
+            target: ""
+            asset_suffix: macos-arm64.node
+          - name: windows-x64
+            os: windows-latest
+            target: ""
+            asset_suffix: windows-x64.node
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust Build
+        uses: swatinem/rust-cache@v2
+
+      # ── Install Cross-Compilation Toolchain (if required) ───────────────────
+
+      - name: Install cross-compilation toolchain (Linux ARM64)
+        if: matrix.platform.name == 'linux-arm64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          rustup target add aarch64-unknown-linux-gnu
+
+      # ── Download libntgcalls Shared Libraries ─────────────────────────────────
+
+      - name: Install libntgcalls (Linux x64)
+        if: matrix.platform.name == 'linux-x64'
+        run: |
+          mkdir -p lib
+          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+          curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-x86_64-shared_libs.zip"
+          unzip -jo libs.zip "lib/libntgcalls.so" -d lib/
+          rm libs.zip
+
+      - name: Install libntgcalls (Linux ARM64)
+        if: matrix.platform.name == 'linux-arm64'
+        run: |
+          mkdir -p lib
+          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+          curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-arm64-shared_libs.zip"
+          unzip -jo libs.zip "lib/libntgcalls.so" -d lib/
+          rm libs.zip
+
+      - name: Install libntgcalls (macOS)
+        if: matrix.platform.name == 'macos-arm64'
+        run: |
+          mkdir -p lib
+          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | grep -o '"tag_name": "[^"]*' | grep -o '[^"tag_name": ]*$')
+          curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.macos-arm64-shared_libs.zip"
+          unzip -jo libs.zip "lib/libntgcalls.dylib" -d lib/
+          rm libs.zip
+
+      - name: Install libntgcalls (Windows)
+        if: matrix.platform.name == 'windows-x64'
+        shell: powershell
+        run: |
+          $tag = (Invoke-RestMethod -Uri "https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest").tag_name
+          Invoke-WebRequest -Uri "https://github.com/pytgcalls/ntgcalls/releases/download/${tag}/ntgcalls.windows-x86_64-shared_libs.zip" -OutFile "libs.zip"
+          New-Item -ItemType Directory -Force -Path "lib"
+          Expand-Archive -Path "libs.zip" -DestinationPath "temp_libs"
+          Move-Item -Path "temp_libs\lib\ntgcalls.dll" -Destination "lib\"
+          Remove-Item -Recurse -Force "libs.zip", "temp_libs"
+
+      # ── Build Native Addon ───────────────────────────────────────────────────
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Compile C-bindings (Rust Addon)
+        run: |
+          if [ "${{ matrix.platform.target }}" != "" ]; then
+            cargo build --release --target ${{ matrix.platform.target }}
+          else
+            cargo build --release
+          fi
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+
+      - name: Copy & Prepare Binary (Unix)
+        if: matrix.platform.os != 'windows-latest'
+        run: |
+          if [ "${{ matrix.platform.name }}" = "linux-arm64" ]; then
+            cp target/aarch64-unknown-linux-gnu/release/libntgcalls.so ./ntgcalls.${{ matrix.platform.asset_suffix }}
+          elif [ "${{ matrix.platform.os }}" = "ubuntu-latest" ]; then
+            cp target/release/libntgcalls.so ./ntgcalls.${{ matrix.platform.asset_suffix }}
+          else
+            cp target/release/libntgcalls.dylib ./ntgcalls.${{ matrix.platform.asset_suffix }}
+          fi
+
+      - name: Copy & Prepare Binary (Windows)
+        if: matrix.platform.os == 'windows-latest'
+        shell: powershell
+        run: |
+          cp target/release/ntgcalls.dll ./ntgcalls.${{ matrix.platform.asset_suffix }}
+
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ntgcalls-${{ matrix.platform.name }}
+          path: ntgcalls.${{ matrix.platform.asset_suffix }}
+
+  publish-release:
+    name: Publish Release
+    runs-on: ubuntu-latest
+    needs: [build-native]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all built binaries
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create GitHub Release & Attach Binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ntgcalls.linux-x64.node
+            ntgcalls.linux-arm64.node
+            ntgcalls.macos-arm64.node
+            ntgcalls.windows-x64.node
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

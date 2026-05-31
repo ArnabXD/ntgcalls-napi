@@ -2,3 +2,4 @@
 /*.node
 /Cargo.lock
 /lib
+node_modules
