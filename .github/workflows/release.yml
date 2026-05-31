@@ -31,19 +31,19 @@ jobs:
           
           # 1. Linux x64
           curl -L -o linux-x64.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-x86_64-shared_libs.zip"
-          unzip -jo linux-x64.zip "lib/libntgcalls.so" -d dl/linux-x64/
+          unzip -jo linux-x64.zip "*.so" -d dl/linux-x64/
           
           # 2. Linux ARM64
           curl -L -o linux-arm64.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-arm64-shared_libs.zip"
-          unzip -jo linux-arm64.zip "lib/libntgcalls.so" -d dl/linux-arm64/
+          unzip -jo linux-arm64.zip "*.so" -d dl/linux-arm64/
           
           # 3. macOS ARM64
           curl -L -o macos-arm64.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.macos-arm64-shared_libs.zip"
-          unzip -jo macos-arm64.zip "lib/libntgcalls.dylib" -d dl/macos-arm64/
+          unzip -jo macos-arm64.zip "*.dylib" -d dl/macos-arm64/
           
-          # 4. Windows x64 (files are at root of zip, not inside lib/)
+          # 4. Windows x64
           curl -L -o windows-x64.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.windows-x86_64-shared_libs.zip"
-          unzip -jo windows-x64.zip "ntgcalls.dll" "ntgcalls.lib" -d dl/windows-x64/
+          unzip -jo windows-x64.zip "*.dll" "*.lib" -d dl/windows-x64/
 
       - name: Upload Linux x64 Artifact
         uses: actions/upload-artifact@v4
