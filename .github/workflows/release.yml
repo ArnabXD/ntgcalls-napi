@@ -46,25 +46,25 @@ jobs:
           unzip -jo windows-x64.zip "*.dll" "*.lib" -d dl/windows-x64/
 
       - name: Upload Linux x64 Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: libntgcalls-linux-x64
           path: dl/linux-x64/
 
       - name: Upload Linux ARM64 Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: libntgcalls-linux-arm64
           path: dl/linux-arm64/
 
       - name: Upload macOS ARM64 Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: libntgcalls-macos-arm64
           path: dl/macos-arm64/
 
       - name: Upload Windows x64 Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: libntgcalls-windows-x64
           path: dl/windows-x64/
@@ -96,10 +96,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -120,8 +120,8 @@ jobs:
 
       # ── Download Pre-Extracted Shared Library Artifact ──────────────────────
 
-      - name: Download Shared Library Artifact
-        uses: actions/download-artifact@v4
+      - name: Download Pre-Extracted Shared Library Artifact
+        uses: actions/download-artifact@v7
         with:
           name: libntgcalls-${{ matrix.platform.name }}
           path: lib/
@@ -159,7 +159,7 @@ jobs:
           cp target/release/ntgcalls.dll ./ntgcalls.${{ matrix.platform.asset_suffix }}
 
       - name: Upload Binary Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ntgcalls-${{ matrix.platform.name }}
           path: ntgcalls.${{ matrix.platform.asset_suffix }}
@@ -172,10 +172,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download all built binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           merge-multiple: true
 

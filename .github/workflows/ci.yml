@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -37,9 +37,12 @@ jobs:
       - name: Install libntgcalls (Linux x64)
         run: |
           mkdir -p lib
-          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+          TAG=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
+          if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
+            TAG="v2.1.0"
+          fi
           curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-x86_64-shared_libs.zip"
-          unzip -jo libs.zip "lib/libntgcalls.so" -d lib/
+          unzip -jo libs.zip "*.so" -d lib/
           rm libs.zip
 
       # ── Code Quality & Format Checks ─────────────────────────────────────────
