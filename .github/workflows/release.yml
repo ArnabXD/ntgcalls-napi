@@ -61,7 +61,7 @@ jobs:
         if: matrix.platform.name == 'linux-x64'
         run: |
           mkdir -p lib
-          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
           curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-x86_64-shared_libs.zip"
           unzip -jo libs.zip "lib/libntgcalls.so" -d lib/
           rm libs.zip
@@ -70,7 +70,7 @@ jobs:
         if: matrix.platform.name == 'linux-arm64'
         run: |
           mkdir -p lib
-          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
           curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-arm64-shared_libs.zip"
           unzip -jo libs.zip "lib/libntgcalls.so" -d lib/
           rm libs.zip
@@ -79,7 +79,7 @@ jobs:
         if: matrix.platform.name == 'macos-arm64'
         run: |
           mkdir -p lib
-          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | grep -o '"tag_name": "[^"]*' | grep -o '[^"tag_name": ]*$')
+          TAG=$(curl -s https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
           curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.macos-arm64-shared_libs.zip"
           unzip -jo libs.zip "lib/libntgcalls.dylib" -d lib/
           rm libs.zip
@@ -92,8 +92,7 @@ jobs:
           Invoke-WebRequest -Uri "https://github.com/pytgcalls/ntgcalls/releases/download/${tag}/ntgcalls.windows-x86_64-shared_libs.zip" -OutFile "libs.zip"
           New-Item -ItemType Directory -Force -Path "lib"
           Expand-Archive -Path "libs.zip" -DestinationPath "temp_libs"
-          Move-Item -Path "temp_libs\lib\ntgcalls.dll" -Destination "lib\"
-          Move-Item -Path "temp_libs\lib\ntgcalls.lib" -Destination "lib\"
+          Get-ChildItem -Path "temp_libs" -Filter "ntgcalls.*" -Recurse | Move-Item -Destination "lib\"
           Remove-Item -Recurse -Force "libs.zip", "temp_libs"
 
       # ── Build Native Addon ───────────────────────────────────────────────────
