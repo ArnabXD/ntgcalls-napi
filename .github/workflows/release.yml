@@ -93,6 +93,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "lib"
           Expand-Archive -Path "libs.zip" -DestinationPath "temp_libs"
           Move-Item -Path "temp_libs\lib\ntgcalls.dll" -Destination "lib\"
+          Move-Item -Path "temp_libs\lib\ntgcalls.lib" -Destination "lib\"
           Remove-Item -Recurse -Force "libs.zip", "temp_libs"
 
       # ── Build Native Addon ───────────────────────────────────────────────────
