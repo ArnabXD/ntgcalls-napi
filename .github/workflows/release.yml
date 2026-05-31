@@ -7,8 +7,71 @@ on:
   workflow_dispatch:
 
 jobs:
+  setup-libs:
+    name: Prepare Shared Libraries
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get-version.outputs.tag }}
+    steps:
+      - name: Resolve Latest Release
+        id: get-version
+        run: |
+          TAG=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
+          if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
+            TAG="v2.1.0"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Download & Unzip All Platform Libraries
+        run: |
+          TAG="${{ steps.get-version.outputs.tag }}"
+          echo "Using libntgcalls release: $TAG"
+          
+          mkdir -p dl/linux-x64 dl/linux-arm64 dl/macos-arm64 dl/windows-x64
+          
+          # 1. Linux x64
+          curl -L -o linux-x64.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-x86_64-shared_libs.zip"
+          unzip -jo linux-x64.zip "lib/libntgcalls.so" -d dl/linux-x64/
+          
+          # 2. Linux ARM64
+          curl -L -o linux-arm64.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-arm64-shared_libs.zip"
+          unzip -jo linux-arm64.zip "lib/libntgcalls.so" -d dl/linux-arm64/
+          
+          # 3. macOS ARM64
+          curl -L -o macos-arm64.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.macos-arm64-shared_libs.zip"
+          unzip -jo macos-arm64.zip "lib/libntgcalls.dylib" -d dl/macos-arm64/
+          
+          # 4. Windows x64 (files are at root of zip, not inside lib/)
+          curl -L -o windows-x64.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.windows-x86_64-shared_libs.zip"
+          unzip -jo windows-x64.zip "ntgcalls.dll" "ntgcalls.lib" -d dl/windows-x64/
+
+      - name: Upload Linux x64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libntgcalls-linux-x64
+          path: dl/linux-x64/
+
+      - name: Upload Linux ARM64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libntgcalls-linux-arm64
+          path: dl/linux-arm64/
+
+      - name: Upload macOS ARM64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libntgcalls-macos-arm64
+          path: dl/macos-arm64/
+
+      - name: Upload Windows x64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libntgcalls-windows-x64
+          path: dl/windows-x64/
+
   build-native:
     name: Build Native (${{ matrix.platform.name }})
+    needs: [setup-libs]
     runs-on: ${{ matrix.platform.os }}
     strategy:
       fail-fast: false
@@ -55,63 +118,13 @@ jobs:
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           rustup target add aarch64-unknown-linux-gnu
 
-      # ── Download libntgcalls Shared Libraries ─────────────────────────────────
+      # ── Download Pre-Extracted Shared Library Artifact ──────────────────────
 
-      - name: Install libntgcalls (Linux x64)
-        if: matrix.platform.name == 'linux-x64'
-        run: |
-          mkdir -p lib
-          TAG=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
-          if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
-            TAG="v2.1.0"
-          fi
-          curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-x86_64-shared_libs.zip"
-          unzip -jo libs.zip "lib/libntgcalls.so" -d lib/
-          rm libs.zip
-
-      - name: Install libntgcalls (Linux ARM64)
-        if: matrix.platform.name == 'linux-arm64'
-        run: |
-          mkdir -p lib
-          TAG=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
-          if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
-            TAG="v2.1.0"
-          fi
-          curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.linux-arm64-shared_libs.zip"
-          unzip -jo libs.zip "lib/libntgcalls.so" -d lib/
-          rm libs.zip
-
-      - name: Install libntgcalls (macOS)
-        if: matrix.platform.name == 'macos-arm64'
-        run: |
-          mkdir -p lib
-          TAG=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest | jq -r .tag_name)
-          if [ "$TAG" = "null" ] || [ -z "$TAG" ]; then
-            TAG="v2.1.0"
-          fi
-          curl -L -o libs.zip "https://github.com/pytgcalls/ntgcalls/releases/download/${TAG}/ntgcalls.macos-arm64-shared_libs.zip"
-          unzip -jo libs.zip "lib/libntgcalls.dylib" -d lib/
-          rm libs.zip
-
-      - name: Install libntgcalls (Windows)
-        if: matrix.platform.name == 'windows-x64'
-        shell: powershell
-        run: |
-          $headers = @{}
-          if ("${{ secrets.GITHUB_TOKEN }}") {
-            $headers["Authorization"] = "token ${{ secrets.GITHUB_TOKEN }}"
-          }
-          $tag = "v2.1.0"
-          try {
-            $tag = (Invoke-RestMethod -Uri "https://api.github.com/repos/pytgcalls/ntgcalls/releases/latest" -Headers $headers).tag_name
-          } catch {
-            Write-Host "GitHub API rate limit or error, falling back to v2.1.0"
-          }
-          Invoke-WebRequest -Uri "https://github.com/pytgcalls/ntgcalls/releases/download/${tag}/ntgcalls.windows-x86_64-shared_libs.zip" -OutFile "libs.zip"
-          New-Item -ItemType Directory -Force -Path "lib"
-          Expand-Archive -Path "libs.zip" -DestinationPath "temp_libs"
-          Get-ChildItem -Path "temp_libs" -Filter "ntgcalls.*" -Recurse | Move-Item -Destination "lib\"
-          Remove-Item -Recurse -Force "libs.zip", "temp_libs"
+      - name: Download Shared Library Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: libntgcalls-${{ matrix.platform.name }}
+          path: lib/
 
       # ── Build Native Addon ───────────────────────────────────────────────────
 
