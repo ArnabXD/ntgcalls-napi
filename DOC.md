@@ -54,12 +54,12 @@ console.log('Using ntgcalls FFI version:', get_version());
 // 2. Initialize the Calls Client
 const ntg = new NtgCalls();
 
-// 3. Register Event Listeners
-ntg.on_connection_change((chatId, kind, state) => {
+// 3. Register Event Listeners (EventEmitter Style)
+ntg.on('connection-change', (chatId, kind, state) => {
   console.log(`Connection Changed on Chat ${chatId} | Kind: ${kind} | State: ${state}`);
 });
 
-ntg.on_stream_end((chatId, streamType, streamDevice) => {
+ntg.on('stream-end', (chatId, streamType, streamDevice) => {
   console.log(`Playback finished on Chat ${chatId} | Type: ${streamType} | Device: ${streamDevice}`);
 });
 
@@ -259,34 +259,44 @@ Toggles GLib main loop integration. Use with discretion depending on native host
 
 ### `NtgCalls` Class Methods
 
-#### Callbacks
+#### Events
+
+`NtgCalls` extends the standard Node.js `EventEmitter`. You can register event listeners using `.on('event-name', callback)`.
 
 > [!IMPORTANT]
 > Always register event listeners **before** initiating a call session with `create()` or `connect()`.
 
-##### `on_stream_end(cb: (chatId: bigint, streamType: number, streamDevice: number) => void): void`
-Triggers when a playback stream is exhausted or terminated.
+##### `'stream-end'`
+* **Callback Signature**: `(chatId: bigint, streamType: number, streamDevice: number) => void`
+* **Description**: Triggers when a playback stream is exhausted or terminated.
 
-##### `on_upgrade(cb: (chatId: bigint, state: MediaState) => void): void`
-Fires when stream characteristics or muted states are toggled.
+##### `'upgrade'`
+* **Callback Signature**: `(chatId: bigint, state: MediaState) => void`
+* **Description**: Fires when stream characteristics or muted states are toggled.
 
-##### `on_connection_change(cb: (chatId: bigint, kind: number, state: number) => void): void`
-Fires when WebRTC connectivity states shift.
+##### `'connection-change'`
+* **Callback Signature**: `(chatId: bigint, kind: number, state: number) => void`
+* **Description**: Fires when WebRTC connectivity states shift.
 
-##### `on_signaling_data(cb: (chatId: bigint, data: Buffer) => void): void`
-Fires when new signaling parameters are ready to be dispatched to remote participants.
+##### `'signaling-data'`
+* **Callback Signature**: `(chatId: bigint, data: Buffer) => void`
+* **Description**: Fires when new signaling parameters are ready to be dispatched to remote participants.
 
-##### `on_frames(cb: (chatId: bigint, mode: number, device: number, frames: Array<Frame>) => void): void`
-Delivers raw incoming media frames captured by WebRTC components.
+##### `'frames'`
+* **Callback Signature**: `(chatId: bigint, mode: number, device: number, frames: Array<Frame>) => void`
+* **Description**: Delivers raw incoming media frames captured by WebRTC components.
 
-##### `on_remote_source_change(cb: (chatId: bigint, source: RemoteSource) => void): void`
-Fires when a remote WebRTC participant alters their media device settings.
+##### `'remote-source-change'`
+* **Callback Signature**: `(chatId: bigint, source: RemoteSource) => void`
+* **Description**: Fires when a remote WebRTC participant alters their media device settings.
 
-##### `on_request_broadcast_timestamp(cb: (chatId: bigint) => void): void`
-Requested when synchronizing broadcast components.
+##### `'request-broadcast-timestamp'`
+* **Callback Signature**: `(chatId: bigint) => void`
+* **Description**: Requested when synchronizing broadcast components.
 
-##### `on_request_broadcast_part(cb: (chatId: bigint, request: SegmentPartRequest) => void): void`
-Triggers when broadcast streaming demands chunk updates.
+##### `'request-broadcast-part'`
+* **Callback Signature**: `(chatId: bigint, request: SegmentPartRequest) => void`
+* **Description**: Triggers when broadcast streaming demands chunk updates.
 
 ---
 
