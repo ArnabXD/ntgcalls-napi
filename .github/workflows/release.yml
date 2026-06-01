@@ -182,7 +182,7 @@ jobs:
         id: cliff
         with:
           config: cliff.toml
-          args: --current --strip header
+          args: --current --strip header --ignore-tags '.*-beta.*'
         env:
           OUTPUT: RELEASE_NOTES.md
 

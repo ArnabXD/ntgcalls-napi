@@ -4,58 +4,41 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-## [unreleased]
-
-### 🐛 Bug Fixes
-
-- Convert BigInt to standard JS number at N-API FFI boundary (1e4a881)
-
-### 📚 Documentation
-
-- Update README.md and DOC.md for EventEmitter release (ab75b3e)
-- Update CHANGELOG.md for documentation release (2b69e18)
-- Update CHANGELOG.md for FFI BigInt fix (2f8d70d)
-
-## [0.3.0-beta-03] - 2026-06-01
-
-### ⚙️ Miscellaneous Chores
-
-- Setup git-cliff and generate initial CHANGELOG.md (e80849f)
-- Bump version to 0.3.0-beta-03 (3a3543f)
-
-### 📚 Documentation
-
-- Update CLAUDE.md architecture section for modular submodules (a90368b)
-- Align connect_p2p parameter casing with typescript definitions (62a7db1)
-
-### 🚀 Features
-
-- Implement high-level EventEmitter JS/TS wrapper for NtgCalls (b5f8d52)
-
-## [0.3.0-beta-02] - 2026-06-01
+## [0.3.0] - 2026-06-01
 
 ### ⚙️ Miscellaneous Chores
 
 - Bump version to 0.3.0-beta-02 and modularize codebase (a8f6abc)
-
-## [0.3.0-beta-01] - 2026-06-01
+- Setup git-cliff and generate initial CHANGELOG.md (e80849f)
+- Bump version to 0.3.0-beta-03 (3a3543f)
+- Bump version to 0.3.0-beta-04 (95a0002)
+- Release 0.3.0 (341c43b)
 
 ### 🐛 Bug Fixes
 
 - Correct struct layout mismatches and spurious chatId=0 stream-end filter (5034698)
+- Convert BigInt to standard JS number at N-API FFI boundary (1e4a881)
+- Callback args index off-by-one — tuple is at args[1] not args[2] (0e45d12)
 
 ### 📚 Documentation
 
 - Add comprehensive DOC.md integration guide (f18be36)
+- Update CLAUDE.md architecture section for modular submodules (a90368b)
+- Align connect_p2p parameter casing with typescript definitions (62a7db1)
+- Update README.md and DOC.md for EventEmitter release (ab75b3e)
+- Update CHANGELOG.md for documentation release (2b69e18)
+- Update CHANGELOG.md for FFI BigInt fix (2f8d70d)
 
 ### 🔩 Other Changes
 
 - V0.3.0-beta-01: rewrite native wrapper, thread-safe callbacks, full typings, and logging support (26e14c3)
 - Dynamically extract npm publish tag for prereleases (50adeb7)
+- Use git-cliff to generate proper release notes (7bf2aaa)
 
 ### 🚀 Features
 
 - Expose ntg_time as time() binding for playback position tracking (105240b)
+- Implement high-level EventEmitter JS/TS wrapper for NtgCalls (b5f8d52)
 
 ## [0.2.1] - 2026-05-31
 
