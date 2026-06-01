@@ -6,9 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [unreleased]
 
+### 📚 Documentation
+
+- Update README.md and DOC.md for EventEmitter release (ab75b3e)
+
+## [0.3.0-beta-03] - 2026-06-01
+
 ### ⚙️ Miscellaneous Chores
 
 - Setup git-cliff and generate initial CHANGELOG.md (e80849f)
+- Bump version to 0.3.0-beta-03 (3a3543f)
 
 ### 📚 Documentation
 
