@@ -6,9 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Convert BigInt to standard JS number at N-API FFI boundary (1e4a881)
+
 ### 📚 Documentation
 
 - Update README.md and DOC.md for EventEmitter release (ab75b3e)
+- Update CHANGELOG.md for documentation release (2b69e18)
 
 ## [0.3.0-beta-03] - 2026-06-01
 
