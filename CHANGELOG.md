@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update README.md and DOC.md for EventEmitter release (ab75b3e)
 - Update CHANGELOG.md for documentation release (2b69e18)
+- Update CHANGELOG.md for FFI BigInt fix (2f8d70d)
 
 ## [0.3.0-beta-03] - 2026-06-01
 
