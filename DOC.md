@@ -354,7 +354,7 @@ Completes the cryptographic handshake, generating the key fingerprint and auth v
 ##### `skip_exchange(userId: bigint, encryptionKey: Buffer, isOutgoing: boolean): Promise<void>`
 Bypasses Diffie-Hellman exchange using a pre-negotiated secure encryption key.
 
-##### `connect_p2p(userId: bigint, rtcServers: Array<RtcServer>, versionsList: Array<string>, p2pAllowed: boolean): Promise<void>`
+##### `connect_p2p(userId: bigint, rtcServers: Array<RtcServer>, versionsList: Array<string>, p2PAllowed: boolean): Promise<void>`
 Completes the connection setup for a direct P2P session.
 
 ##### `send_signaling_data(userId: bigint, data: Buffer): Promise<void>`
