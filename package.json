@@ -12,7 +12,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "cargo fmt",
-    "build": "napi build --release"
+    "build": "napi build --release --dts binding.d.ts"
   },
   "repository": {
     "type": "git",
