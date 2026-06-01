@@ -79,12 +79,15 @@ class NtgCalls extends EventEmitter {
     });
   }
 
-  // Helper to ensure chatId/userId is passed as a BigInt
+  // Helper to ensure chatId/userId is passed as a standard JS Number to the N-API FFI boundary.
+  // Although the TS definitions declare it as bigint | number, napi-rs version 3 strictly
+  // expects a JS Number at runtime for i64 arguments. Converting bigint to number is safe
+  // since Telegram IDs fit well within Number.MAX_SAFE_INTEGER.
   id(value) {
     if (typeof value === "bigint") {
-      return value;
+      return Number(value);
     }
-    return BigInt(value);
+    return value;
   }
 
   async create(chatId) {
