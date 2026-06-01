@@ -192,4 +192,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to npm
-        run: npm publish --access public --ignore-scripts
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *"-"* ]]; then
+            TAG=$(echo "$VERSION" | cut -d'-' -f2 | sed -E 's/[\.-]?[0-9]+$//')
+            if [ -z "$TAG" ]; then TAG="next"; fi
+            echo "Prerelease version detected ($VERSION). Publishing with tag: $TAG"
+            npm publish --access public --ignore-scripts --tag "$TAG"
+          else
+            echo "Stable version detected ($VERSION). Publishing with default tag"
+            npm publish --access public --ignore-scripts
+          fi
