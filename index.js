@@ -13,8 +13,16 @@ const {
   get_protocol,
   enable_g_lib_loop,
   get_media_devices,
-  register_logger,
+  register_logger: nativeRegisterLogger,
 } = require(addonPath);
+
+function register_logger(cb) {
+  nativeRegisterLogger((_err, message) => {
+    if (message) {
+      cb(message);
+    }
+  });
+}
 
 class NtgCalls extends EventEmitter {
   constructor() {
