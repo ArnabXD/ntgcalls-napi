@@ -1,6 +1,6 @@
 {
   "name": "@arnabxd/ntgcalls-napi",
-  "version": "0.3.0-beta-01",
+  "version": "0.3.0-beta-02",
   "description": "Thread-safe Rust N-API native bindings for libntgcalls",
   "main": "index.js",
   "types": "index.d.ts",
@@ -12,7 +12,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "cargo fmt",
-    "build": "cargo build --release && node -e \"const{cpSync}=require('fs'),p=process.platform;cpSync(p==='win32'?'target/release/ntgcalls.dll':p==='darwin'?'target/release/libntgcalls.dylib':'target/release/libntgcalls.so','ntgcalls.node')\""
+    "build": "napi build --release"
   },
   "repository": {
     "type": "git",
@@ -25,6 +25,7 @@
   ],
   "devDependencies": {
     "@biomejs/biome": "latest",
+    "@napi-rs/cli": "^3.7.0",
     "lefthook": "latest"
   }
 }
