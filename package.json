@@ -12,7 +12,8 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "cargo fmt",
-    "build": "napi build --release --dts binding.d.ts"
+    "build": "napi build --release --dts binding.d.ts",
+    "changelog": "npx git-cliff -o CHANGELOG.md"
   },
   "repository": {
     "type": "git",
