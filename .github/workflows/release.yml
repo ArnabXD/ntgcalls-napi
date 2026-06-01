@@ -177,15 +177,24 @@ jobs:
         with:
           merge-multiple: true
 
+      - name: Generate Changelog for this Tag
+        uses: orhun/git-cliff-action@v4
+        id: cliff
+        with:
+          config: cliff.toml
+          args: --current --strip header
+        env:
+          OUTPUT: RELEASE_NOTES.md
+
       - name: Create GitHub Release & Attach Zips
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ntgcalls-napi.linux-x64.zip
             ntgcalls-napi.linux-arm64.zip
             ntgcalls-napi.macos-arm64.zip
             ntgcalls-napi.windows-x64.zip
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
           draft: false
           prerelease: false
         env:
