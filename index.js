@@ -23,56 +23,56 @@ class NtgCalls extends EventEmitter {
 
     // Register callbacks from the native thread safely
     this.native.on_stream_end((...args) => {
-      const tuple = args[2];
+      const tuple = args[1];
       if (tuple) {
         this.emit("stream-end", tuple[0], tuple[1], tuple[2]);
       }
     });
 
     this.native.on_upgrade((...args) => {
-      const tuple = args[2];
+      const tuple = args[1];
       if (tuple) {
         this.emit("upgrade", tuple[0], tuple[1]);
       }
     });
 
     this.native.on_connection_change((...args) => {
-      const tuple = args[2];
+      const tuple = args[1];
       if (tuple) {
         this.emit("connection-change", tuple[0], tuple[1], tuple[2]);
       }
     });
 
     this.native.on_signaling_data((...args) => {
-      const tuple = args[2];
+      const tuple = args[1];
       if (tuple) {
         this.emit("signaling-data", tuple[0], tuple[1]);
       }
     });
 
     this.native.on_frames((...args) => {
-      const tuple = args[2];
+      const tuple = args[1];
       if (tuple) {
         this.emit("frames", tuple[0], tuple[1], tuple[2], tuple[3]);
       }
     });
 
     this.native.on_remote_source_change((...args) => {
-      const tuple = args[2];
+      const tuple = args[1];
       if (tuple) {
         this.emit("remote-source-change", tuple[0], tuple[1]);
       }
     });
 
     this.native.on_request_broadcast_timestamp((...args) => {
-      const val = args[2];
+      const val = args[1];
       if (val !== undefined && val !== null) {
         this.emit("request-broadcast-timestamp", val);
       }
     });
 
     this.native.on_request_broadcast_part((...args) => {
-      const tuple = args[2];
+      const tuple = args[1];
       if (tuple) {
         this.emit("request-broadcast-part", tuple[0], tuple[1]);
       }
