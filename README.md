@@ -1,9 +1,16 @@
 # @arnabxd/ntgcalls-napi
 
-[![npm version](https://img.shields.io/npm/v/@arnabxd/ntgcalls-napi?color=blue&style=flat-square)](https://www.npmjs.com/package/@arnabxd/ntgcalls-napi)
-[![license](https://img.shields.io/github/license/ArnabXD/ntgcalls-napi?style=flat-square)](LICENSE)
-[![GitHub Actions CI](https://img.shields.io/github/actions/workflow/status/ArnabXD/ntgcalls-napi/ci.yml?branch=main&style=flat-square)](https://github.com/ArnabXD/ntgcalls-napi/actions)
+[![npm Version](https://www.shieldcn.dev/npm/@arnabxd/ntgcalls-napi.svg?variant=secondary&theme=neutral)](https://www.npmjs.com/package/@arnabxd/ntgcalls-napi)
+[![npm Total Downloads](https://www.shieldcn.dev/npm/dt/@arnabxd/ntgcalls-napi.svg?variant=secondary&theme=neutral)](https://www.npmjs.com/package/@arnabxd/ntgcalls-napi)
+[![Release](https://www.shieldcn.dev/github/release/ArnabXD/ntgcalls-napi.svg?variant=branded&theme=neutral)](https://github.com/ArnabXD/ntgcalls-napi/releases)
+[![CI](https://www.shieldcn.dev/github/ci/ArnabXD/ntgcalls-napi.svg?variant=secondary&theme=neutral)](https://github.com/ArnabXD/ntgcalls-napi/actions)
+[![License](https://www.shieldcn.dev/github/license/ArnabXD/ntgcalls-napi.svg?variant=ghost&theme=neutral)](LICENSE)
+[![GitHub Stars](https://www.shieldcn.dev/github/stars/ArnabXD/ntgcalls-napi.svg?variant=secondary&theme=neutral)](https://github.com/ArnabXD/ntgcalls-napi/stargazers)
 [![Platform Support](https://img.shields.io/badge/platforms-linux%20%7C%20macos%20%7C%20windows-orange?style=flat-square)](https://github.com/ArnabXD/ntgcalls-napi/releases)
+[![npm Types](https://www.shieldcn.dev/npm/types/@arnabxd/ntgcalls-napi.svg?theme=blue&variant=branded)](https://www.npmjs.com/package/@arnabxd/ntgcalls-napi)
+[![npm Node](https://www.shieldcn.dev/npm/node/@arnabxd/ntgcalls-napi.svg?variant=secondary&theme=neutral)](https://www.npmjs.com/package/@arnabxd/ntgcalls-napi)
+[![ESM only](https://www.shieldcn.dev/badge/ESM-only-16a34a.svg?variant=secondary&theme=neutral)](#-installation)
+[![Lint · Biome](https://www.shieldcn.dev/badge/Lint-Biome-60A5FA.svg?logo=biome&variant=branded&theme=neutral)](https://biomejs.dev)
 
 Thread-safe Node-API (N-API) native bindings in Rust for `libntgcalls` (C-shared WebRTC library). Fully compatible with Node.js and Bun.
 
@@ -75,3 +82,10 @@ console.log('Generated WebRTC Offer SDP:', offerSdp);
 ```
 
 For comprehensive details on all available APIs, data structures, and best practices, check the **[Client Integration Guide (DOC.md)](DOC.md)**.
+
+---
+
+## 🙏 Credits & Acknowledgements
+
+- **[ntgcalls](https://github.com/pytgcalls/ntgcalls)** — the native C/C++ WebRTC library by the [pytgcalls](https://github.com/pytgcalls) team that this package binds to. All the heavy WebRTC lifting lives in `libntgcalls`; full credit for that work goes to its authors.
+- **[TgMusicBot](https://github.com/AshokShau/TgMusicBot)** by [**Ashok Shau**](https://github.com/AshokShau) — used as a reference for the call lifecycle and signaling flow this wrapper exposes.

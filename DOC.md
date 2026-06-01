@@ -32,7 +32,7 @@ The library wraps native `libntgcalls` code into a robust, non-blocking asynchro
 ### Key Architectural Concepts
 - **Thread Safety**: WebRTC signaling and media processing run on background native C++ threads. To safely deliver notifications to JavaScript, the wrapper utilizes N-API `ThreadsafeFunction` channels, converting native thread dispatches into event-loop tasks.
 - **Non-Blocking Async**: Heavy operations (e.g. SDP generation, key exchange) are delegated to a Tokio threadpool via `spawn_blocking` with safe one-shot synchronization channels.
-- **BigInt Representation**: Telegram Chat IDs, User IDs, and WebRTC timestamps are represented using native JavaScript `bigint` types to prevent the 53-bit floating-point precision limit overflow in normal JavaScript `Number`s.
+- **BigInt Representation**: Telegram Chat IDs, User IDs, and WebRTC timestamps may be supplied as either a JavaScript `number` or a `bigint` (`number | bigint`). The JS wrapper coerces `bigint` arguments to `Number` at the N-API boundary, since napi-rs v3 expects a JS `Number` at runtime for `i64` parameters — this is safe because Telegram IDs fit within `Number.MAX_SAFE_INTEGER` (2^53 − 1). Values returned by the library (e.g. `time()`) are still `bigint`.
 - **Memory Safety**: Wrapper context allocations (e.g. C-string parameters, vector structures) are maintained in native heap context structures (`Keeper` types) and safely freed automatically once native callbacks complete.
 
 ---
@@ -131,7 +131,7 @@ export interface MediaState {
 }
 
 export interface FrameData {
-  absoluteCaptureTimestampMs: bigint;
+  absoluteCaptureTimestampMs: bigint | number;
   width: number;
   height: number;
   rotation: number;
@@ -175,7 +175,7 @@ export interface AuthParams {
 }
 
 export interface RtcServer {
-  id: bigint;
+  id: bigint | number;
   ipv4?: string;
   ipv6?: string;
   username?: string;
@@ -302,87 +302,87 @@ Toggles GLib main loop integration. Use with discretion depending on native host
 
 #### Active Session Operations
 
-##### `create(chatId: bigint): Promise<string>`
+##### `create(chatId: number | bigint): Promise<string>`
 Initializes a calls context for a designated chat and returns an **Offer SDP** string.
 
-##### `connect(chatId: bigint, params: string, isPresentation: boolean): Promise<void>`
+##### `connect(chatId: number | bigint, params: string, isPresentation: boolean): Promise<void>`
 Completes the WebRTC handshake using the remote **Answer SDP** string (`params`).
 
-##### `init_presentation(chatId: bigint): Promise<string>`
+##### `init_presentation(chatId: number | bigint): Promise<string>`
 Starts presentation/screen sharing within the active session, generating a secondary Offer SDP.
 
-##### `stop_presentation(chatId: bigint): Promise<void>`
+##### `stop_presentation(chatId: number | bigint): Promise<void>`
 Terminates the active presentation stream.
 
 ---
 
 #### Stream Control Operations
 
-##### `set_stream_sources(chatId: bigint, streamMode: number, desc: MediaDescription): Promise<void>`
+##### `set_stream_sources(chatId: number | bigint, streamMode: number, desc: MediaDescription): Promise<void>`
 Sets the primary microphone, speaker, camera, and screen streams in `streamMode` (0 = CAPTURE, 1 = PLAYBACK).
 
-##### `set_audio_source(chatId: bigint, ffmpegCmd: string): Promise<void>`
+##### `set_audio_source(chatId: number | bigint, ffmpegCmd: string): Promise<void>`
 Convenience wrapper that configures raw shell execution to feed audio playback to the session.
 
-##### `pause(chatId: bigint): Promise<void>`
+##### `pause(chatId: number | bigint): Promise<void>`
 Pauses active streaming on the specified chat.
 
-##### `resume(chatId: bigint): Promise<void>`
+##### `resume(chatId: number | bigint): Promise<void>`
 Resumes streaming on the specified chat.
 
-##### `mute(chatId: bigint): Promise<void>`
+##### `mute(chatId: number | bigint): Promise<void>`
 Mutes the client.
 
-##### `unmute(chatId: bigint): Promise<void>`
+##### `unmute(chatId: number | bigint): Promise<void>`
 Unmutes the client.
 
-##### `stop(chatId: bigint): Promise<void>`
+##### `stop(chatId: number | bigint): Promise<void>`
 Safely stops the stream and tears down WebRTC allocations for the designated chat.
 
-##### `time(chatId: bigint, mode?: number): Promise<bigint>`
+##### `time(chatId: number | bigint, mode?: number): Promise<bigint>`
 Returns the absolute elapsed playback time of active media.
 
-##### `get_state(chatId: bigint): Promise<MediaState>`
+##### `get_state(chatId: number | bigint): Promise<MediaState>`
 Returns the current active media state structure (mute and video statuses).
 
-##### `get_connection_mode(chatId: bigint): Promise<number>`
+##### `get_connection_mode(chatId: number | bigint): Promise<number>`
 Returns the active transport mode (e.g. RTC, RTMP, etc.).
 
 ---
 
 #### Advanced Peer-to-Peer & Cryptography
 
-##### `create_p2p(userId: bigint): Promise<void>`
+##### `create_p2p(userId: number | bigint): Promise<void>`
 Initializes a direct P2P media context for a direct call session with `userId`.
 
-##### `init_exchange(userId: bigint, dhConfig: DhConfig, gAHash: Buffer): Promise<Buffer>`
+##### `init_exchange(userId: number | bigint, dhConfig: DhConfig, gAHash: Buffer): Promise<Buffer>`
 Initializes Diffie-Hellman cryptographic exchange with a peer.
 
-##### `exchange_keys(userId: bigint, gAOrB: Buffer, fingerprint: bigint): Promise<AuthParams>`
+##### `exchange_keys(userId: number | bigint, gAOrB: Buffer, fingerprint: number | bigint): Promise<AuthParams>`
 Completes the cryptographic handshake, generating the key fingerprint and auth values.
 
-##### `skip_exchange(userId: bigint, encryptionKey: Buffer, isOutgoing: boolean): Promise<void>`
+##### `skip_exchange(userId: number | bigint, encryptionKey: Buffer, isOutgoing: boolean): Promise<void>`
 Bypasses Diffie-Hellman exchange using a pre-negotiated secure encryption key.
 
-##### `connect_p2p(userId: bigint, rtcServers: Array<RtcServer>, versionsList: Array<string>, p2PAllowed: boolean): Promise<void>`
+##### `connect_p2p(userId: number | bigint, rtcServers: Array<RtcServer>, versionsList: Array<string>, p2PAllowed: boolean): Promise<void>`
 Completes the connection setup for a direct P2P session.
 
-##### `send_signaling_data(userId: bigint, data: Buffer): Promise<void>`
+##### `send_signaling_data(userId: number | bigint, data: Buffer): Promise<void>`
 Feeds remote signaling credentials into the P2P connection tracker.
 
-##### `add_incoming_video(chatId: bigint, endpoint: string, ssrcGroupsList: Array<SsrcGroup>): Promise<number>`
+##### `add_incoming_video(chatId: number | bigint, endpoint: string, ssrcGroupsList: Array<SsrcGroup>): Promise<number>`
 Registers a incoming video channel configuration from a remote participant.
 
-##### `remove_incoming_video(chatId: bigint, endpoint: string): Promise<void>`
+##### `remove_incoming_video(chatId: number | bigint, endpoint: string): Promise<void>`
 Deregisters the video channel associated with the endpoint.
 
-##### `send_external_frame(chatId: bigint, device: number, data: Buffer, frameData: FrameData): Promise<void>`
+##### `send_external_frame(chatId: number | bigint, device: number, data: Buffer, frameData: FrameData): Promise<void>`
 Manually feeds a custom video frame payload (`data`) directly into the WebRTC camera or screen stream channel.
 
-##### `send_broadcast_timestamp(chatId: bigint, timestamp: bigint): Promise<void>`
+##### `send_broadcast_timestamp(chatId: number | bigint, timestamp: number | bigint): Promise<void>`
 Broadcasters use this to push synchronized timestamps.
 
-##### `send_broadcast_part(chatId: bigint, segmentId: bigint, partId: number, status: number, qualityUpdate: boolean, data: Buffer): Promise<void>`
+##### `send_broadcast_part(chatId: number | bigint, segmentId: number | bigint, partId: number, status: number, qualityUpdate: boolean, data: Buffer): Promise<void>`
 Feeds video broadcast chunks into active subscriber pipelines.
 
 ---
@@ -406,5 +406,7 @@ Native callbacks invoke JavaScript asynchronously. Keep your callbacks **lightwe
 When a track finishes, the `on_stream_end` callback fires. Clients must capture this state to queue the next audio track in their music-bot playlist.
 - Ensure that you mute or stop playback before issuing a secondary `set_stream_sources` or `set_audio_source` payload to prevent audio buffer overlapping or clicking sounds in the voice chat channel.
 
-### C. BigInt Precision
-Never attempt to convert `chatId` or `userId` parameter parameters into JavaScript floating-point `Number`s. Telegram IDs frequently exceed the maximum safe integer limit (`Number.MAX_SAFE_INTEGER`). Always use `BigInt` suffixes (e.g. `1234567890n`) or create them using `BigInt("chat_id_string")`.
+### C. BigInt Handling
+ID and timestamp arguments (`chatId`, `userId`, `fingerprint`, broadcast timestamps, etc.) accept either a `number` or a `bigint` (`number | bigint`). Internally the JS wrapper coerces any `bigint` you pass to a standard `Number` before crossing the N-API boundary, because napi-rs v3 requires a JS `Number` at runtime for `i64` arguments. This is safe: Telegram IDs stay within `Number.MAX_SAFE_INTEGER` (2^53 − 1), well below the `i64` range used natively.
+
+You may therefore pass `1234567890n`, `BigInt("chat_id_string")`, or a plain `1234567890` interchangeably. Return values that the native library produces (such as `time()`) come back as `bigint`.
