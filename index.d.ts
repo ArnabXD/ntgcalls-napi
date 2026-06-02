@@ -1,138 +1,49 @@
 import { EventEmitter } from "node:events";
+import type {
+  AuthParams,
+  CallInfo,
+  DhConfig,
+  Frame,
+  FrameData,
+  LogMessage,
+  MediaDescription,
+  MediaState,
+  RemoteSource,
+  RtcServer,
+  SegmentPartRequest,
+  SsrcGroup,
+} from "./binding";
 
-export interface AudioDescription {
-  mediaSource: number;
-  input: string;
-  sampleRate: number;
-  channelCount: number;
-  keepOpen: boolean;
-}
+export type {
+  AudioDescription,
+  AuthParams,
+  CallInfo,
+  DeviceInfo,
+  DhConfig,
+  Frame,
+  FrameData,
+  LogMessage,
+  MediaDescription,
+  MediaDevices,
+  MediaState,
+  Protocol,
+  RemoteSource,
+  RtcServer,
+  SegmentPartRequest,
+  SsrcGroup,
+  VideoDescription,
+} from "./binding";
 
-export interface AuthParams {
-  gAOrB: Buffer;
-  keyFingerprint: bigint;
-}
-
-export interface CallInfo {
-  capture: number;
-  playback: number;
-}
-
-export interface DeviceInfo {
-  id: string;
-  name: string;
-}
-
-export interface DhConfig {
-  g: number;
-  p: Buffer;
-  random: Buffer;
-}
-
-export declare function enable_g_lib_loop(enable: boolean): void;
-
-export interface Frame {
-  ssrc: bigint;
-  data: Buffer;
-  frameData: FrameData;
-}
-
-export interface FrameData {
-  absoluteCaptureTimestampMs: bigint | number;
-  width: number;
-  height: number;
-  rotation: number;
-}
-
-export declare function get_media_devices(): MediaDevices;
-
-export declare function get_protocol(): Protocol;
-
-export declare function get_version(): string;
-
-export interface LogMessage {
-  level: number;
-  source: number;
-  file: string;
-  line: number;
-  message: string;
-}
-
-export interface MediaDescription {
-  microphone?: AudioDescription;
-  speaker?: AudioDescription;
-  camera?: VideoDescription;
-  screen?: VideoDescription;
-}
-
-export interface MediaDevices {
-  microphone: Array<DeviceInfo>;
-  speaker: Array<DeviceInfo>;
-  camera: Array<DeviceInfo>;
-  screen: Array<DeviceInfo>;
-}
-
-export interface MediaState {
-  muted: boolean;
-  videoPaused: boolean;
-  videoStopped: boolean;
-  presentationPaused: boolean;
-}
-
-export interface Protocol {
-  minLayer: number;
-  maxLayer: number;
-  udpP2P: boolean;
-  udpReflector: boolean;
-  libraryVersions: Array<string>;
-}
+export {
+  enable_g_lib_loop,
+  get_media_devices,
+  get_protocol,
+  get_version,
+} from "./binding";
 
 export declare function register_logger(
   cb: (message: LogMessage) => void,
 ): void;
-
-export interface RemoteSource {
-  ssrc: number;
-  state: number;
-  device: number;
-}
-
-export interface RtcServer {
-  id: bigint | number;
-  ipv4?: string;
-  ipv6?: string;
-  username?: string;
-  password?: string;
-  port: number;
-  turn: boolean;
-  stun: boolean;
-  tcp: boolean;
-  peerTag?: Buffer;
-}
-
-export interface SegmentPartRequest {
-  segmentId: bigint;
-  partId: number;
-  limit: number;
-  timestamp: bigint;
-  qualityUpdate: boolean;
-  channelId: number;
-  quality: number;
-}
-
-export interface SsrcGroup {
-  semantics: string;
-  ssrcs: Array<number>;
-}
-
-export interface VideoDescription {
-  mediaSource: number;
-  input: string;
-  width: number;
-  height: number;
-  fps: number;
-  keepOpen: boolean;
-}
 
 export interface NtgCallsEvents {
   "stream-end": (

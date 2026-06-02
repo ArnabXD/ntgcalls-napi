@@ -23,6 +23,7 @@
   "files": [
     "index.js",
     "index.d.ts",
+    "binding.d.ts",
     "postinstall.js"
   ],
   "devDependencies": {

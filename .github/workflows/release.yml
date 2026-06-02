@@ -166,6 +166,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       # Node 24 bundles npm >= 11.5.1, required for trusted publishing (OIDC)
       - uses: actions/setup-node@v6
