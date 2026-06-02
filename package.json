@@ -1,6 +1,6 @@
 {
   "name": "@arnabxd/ntgcalls-napi",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Thread-safe Rust N-API native bindings for libntgcalls",
   "license": "MIT",
   "main": "index.js",

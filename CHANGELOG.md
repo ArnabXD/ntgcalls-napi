@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Ship binding.d.ts, fix release notes missing commits (2e86204)
 
+### 🚀 Features
+
+- Add release script (82fc47b)
+
 ## [0.3.1] - 2026-06-01
 
 ### 🐛 Bug Fixes
