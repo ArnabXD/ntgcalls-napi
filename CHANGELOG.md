@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [unreleased]
+
+### 🐛 Bug Fixes
+
+- Ship binding.d.ts, fix release notes missing commits (2e86204)
+
 ## [0.3.1] - 2026-06-01
 
 ### 🐛 Bug Fixes
@@ -14,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ⚙️ Miscellaneous Chores
 
-- Release 0.3.0 (763c11c)
 - Update badges (e8ebfde)
 
 ### 📚 Documentation
