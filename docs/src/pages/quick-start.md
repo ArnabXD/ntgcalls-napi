@@ -40,16 +40,18 @@ const offer = await ntg.create(chatId); // WebRTC offer SDP
 
 You hand the offer to Telegram and get an answer back. Do this with whatever MTProto client you use:
 
+{% tabs "mtproto" %}
+{% tab "MTKruto" %}
 ```js
-// MTKruto
 const answer = await client.joinVideoChat(videoChatId, offer, {
   isAudioEnabled: true,
   isVideoEnabled: false,
 });
 ```
-
+{% endtab %}
+{% tab "GramJS" %}
 ```js
-// GramJS — phone.joinGroupCall, offer goes in `params`, result is the answer
+// phone.joinGroupCall — offer goes in `params`, result holds the answer
 const result = await client.invoke(
   new Api.phone.JoinGroupCall({
     call: inputGroupCall,
@@ -60,6 +62,8 @@ const result = await client.invoke(
 );
 const answer = /* the DataJSON answer from `result` */;
 ```
+{% endtab %}
+{% endtabs %}
 
 ### 3. Connect
 
@@ -94,13 +98,33 @@ Video isn't a separate method — `set_audio_source` is just a shortcut. For vid
 > Enable video **at join time**. If you join audio-only you can't hot-swap video in later — you have
 > to stop and re-join with video enabled. So set `isVideoEnabled: true` in step 2.
 
+Step 2, now with video enabled:
+
+{% tabs "mtproto" %}
+{% tab "MTKruto" %}
 ```js
-// Step 2, with video enabled (MTKruto)
 const answer = await client.joinVideoChat(videoChatId, offer, {
   isAudioEnabled: true,
   isVideoEnabled: true,
 });
 ```
+{% endtab %}
+{% tab "GramJS" %}
+```js
+// JoinGroupCall with video params enabled, offer in `params`
+const result = await client.invoke(
+  new Api.phone.JoinGroupCall({
+    call: inputGroupCall,
+    params: new Api.DataJSON({ data: offer }),
+    muted: false,
+    videoStopped: false,
+    joinAs: 'me',
+  }),
+);
+const answer = /* the DataJSON answer from `result` */;
+```
+{% endtab %}
+{% endtabs %}
 
 Then, instead of `set_audio_source`, push two tracks — one ffmpeg command each:
 

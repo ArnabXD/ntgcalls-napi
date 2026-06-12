@@ -693,6 +693,56 @@ blockquote p:last-child {
   }
 }
 
+/* ---------- Tabbed code blocks ---------- */
+.tabs {
+  margin: 0 0 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.tab-list {
+  display: flex;
+  gap: 0;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.tab-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.55rem 0.95rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab-btn:hover {
+  color: var(--text);
+}
+.tab-btn[aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.tab-panel {
+  padding: 0;
+}
+/* Code blocks sit flush inside the panel; drop their own chrome. */
+.tab-panel pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+.tab-panel > :not(pre) {
+  padding: 0.9rem 1.1rem;
+  margin: 0;
+}
+
 /* ---------- Per-page meta line ---------- */
 .page-meta {
   max-width: var(--max-content);

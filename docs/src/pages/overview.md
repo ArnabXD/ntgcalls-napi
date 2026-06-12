@@ -35,9 +35,28 @@ returns Telegram's answer → this package connects with that answer → you pus
 
 ## Installation
 
+{% tabs "pm" %}
+{% tab "npm" %}
 ```bash
 npm install @arnabxd/ntgcalls-napi
 ```
+{% endtab %}
+{% tab "pnpm" %}
+```bash
+pnpm add @arnabxd/ntgcalls-napi
+```
+{% endtab %}
+{% tab "yarn" %}
+```bash
+yarn add @arnabxd/ntgcalls-napi
+```
+{% endtab %}
+{% tab "bun" %}
+```bash
+bun add @arnabxd/ntgcalls-napi
+```
+{% endtab %}
+{% endtabs %}
 
 The right prebuilt binary (Linux, macOS, Windows) is downloaded automatically on install — no
 compiler or `LD_LIBRARY_PATH` setup needed.

@@ -1,7 +1,57 @@
 import syntaxHighlight from "@11ty/eleventy-plugin-syntaxhighlight";
+import MarkdownIt from "markdown-it";
+import Prism from "prismjs";
+import loadLanguages from "prismjs/components/index.js";
+
+loadLanguages(["bash", "javascript", "typescript", "json"]);
+
+// A standalone markdown renderer for content inside tab shortcodes, using the
+// same Prism token classes the site CSS already styles.
+const tabMd = new MarkdownIt({
+  html: true,
+  highlight(code, lang) {
+    const grammar = Prism.languages[lang];
+    if (grammar) {
+      const html = Prism.highlight(code, grammar, lang);
+      return `<pre class="language-${lang}"><code class="language-${lang}">${html}</code></pre>`;
+    }
+    return ""; // let markdown-it escape and wrap it
+  },
+});
+
+// Slugify a tab group/label into an id-safe token.
+const tabSlug = (s) =>
+  String(s)
+    .toLowerCase()
+    .replace(/[^\w]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 export default function (eleventyConfig) {
   eleventyConfig.addPlugin(syntaxHighlight);
+
+  // ---- Tabbed code blocks: {% tabs "group" %}{% tab "label" %}…{% endtab %}…{% endtabs %} ----
+  // Tabs sharing a `group` sync + persist (handled by tabs.js). Inner content is
+  // rendered as markdown so fenced code highlights.
+  eleventyConfig.addPairedShortcode("tab", (content, label) => {
+    const rendered = tabMd.render(content.trim());
+    return `<section class="tab-panel" data-tab="${tabSlug(label)}" data-label="${label}" role="tabpanel">${rendered}</section>`;
+  });
+  eleventyConfig.addPairedShortcode("tabs", (content, group) => {
+    const grp = tabSlug(group);
+    // Pull (slug, label) pairs from the panels we just rendered, in order.
+    const pairs = [
+      ...content.matchAll(/data-tab="([^"]+)" data-label="([^"]+)"/g),
+    ].map((m) => ({ slug: m[1], label: m[2] }));
+    const seen = new Set();
+    const buttons = pairs
+      .filter((p) => (seen.has(p.slug) ? false : seen.add(p.slug)))
+      .map(
+        (p) =>
+          `<button class="tab-btn" role="tab" data-tab="${p.slug}" type="button">${p.label}</button>`,
+      )
+      .join("");
+    return `<div class="tabs" data-tab-group="${grp}"><div class="tab-list" role="tablist">${buttons}</div>${content}</div>`;
+  });
 
   // Static assets (CSS, etc.) pass through untouched.
   eleventyConfig.addPassthroughCopy({ "src/assets": "assets" });
