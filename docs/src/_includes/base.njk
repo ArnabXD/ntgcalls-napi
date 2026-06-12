@@ -3,8 +3,29 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% if title and title != "Home" %}{{ title }} · {{ site.title }}{% else %}{{ site.title }} · {{ site.tagline }}{% endif %}</title>
-    <meta name="description" content="{{ description or site.tagline }}" />
+    {%- set pageTitle = (title + " · " + site.title) if (title and title != "Home") else (site.title + " · " + site.tagline) %}
+    {%- set pageDesc = description or site.tagline %}
+    {%- set canonical = site.url + page.url %}
+    <title>{{ pageTitle }}</title>
+    <meta name="description" content="{{ pageDesc }}" />
+    <link rel="canonical" href="{{ canonical }}" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="{{ site.title }}" />
+    <meta property="og:title" content="{{ pageTitle }}" />
+    <meta property="og:description" content="{{ pageDesc }}" />
+    <meta property="og:url" content="{{ canonical }}" />
+    <meta property="og:image" content="{{ site.url }}/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ pageTitle }}" />
+    <meta name="twitter:description" content="{{ pageDesc }}" />
+    <meta name="twitter:image" content="{{ site.url }}/og.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,10 +33,9 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="{{ '/assets/style.css' | url }}" />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='7' fill='%232bb673'/></svg>"
-    />
+    <link rel="icon" type="image/svg+xml" href="{{ '/favicon.svg' | url }}" />
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ '/favicon.png' | url }}" />
+    <link rel="apple-touch-icon" href="{{ '/apple-touch-icon.png' | url }}" />
     <script>
       // Apply saved theme before paint to avoid a flash. Dark is the default.
       (function () {
@@ -30,8 +50,17 @@
     <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden />
     <header class="topbar">
       <label for="nav-toggle" class="nav-burger" aria-label="Toggle navigation">☰</label>
-      <span class="status-dot" aria-hidden="true"></span>
-      <a class="brand" href="{{ '/' | url }}"><span class="at">@arnabxd/</span>ntgcalls-napi</a>
+      <a class="brand" href="{{ '/' | url }}">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <g fill="currentColor">
+            <rect x="6" y="13" width="3.5" height="6" rx="1.75" />
+            <rect x="11.5" y="9" width="3.5" height="14" rx="1.75" />
+            <rect x="17" y="5" width="3.5" height="22" rx="1.75" />
+            <rect x="22.5" y="11" width="3.5" height="10" rx="1.75" />
+          </g>
+        </svg>
+        <span class="brand-text"><span class="at">@arnabxd/</span>ntgcalls-napi</span>
+      </a>
       <span class="topbar-spacer"></span>
       <span class="topbar-meta">v{{ lib.version }}</span>
       <a class="topbar-link" href="{{ site.npm }}" target="_blank" rel="noopener">npm</a>

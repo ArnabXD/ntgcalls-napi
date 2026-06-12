@@ -97,6 +97,9 @@ a:hover {
   flex: 0 0 auto;
 }
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   font-family: var(--font-mono);
   font-weight: 500;
   font-size: 0.82rem;
@@ -106,6 +109,15 @@ a:hover {
 .brand:hover {
   text-decoration: none;
   color: var(--text);
+}
+.brand:hover .brand-mark {
+  color: var(--accent-dim);
+}
+.brand-mark {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  flex: 0 0 auto;
 }
 .brand .at {
   color: var(--text-faint);
