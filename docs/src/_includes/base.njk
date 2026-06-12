@@ -72,13 +72,13 @@
           </div>
           {%- endif %}
           {{ content | safe }}
-          <footer class="page-footer">
+          <div class="page-meta">
             <a href="{{ site.repo }}" target="_blank" rel="noopener">Edit on GitHub</a>
             <span>·</span>
             <span>MIT</span>
             <span>·</span>
             <span>v{{ lib.version }}</span>
-          </footer>
+          </div>
         </article>
       </main>
 
@@ -94,6 +94,15 @@
       </aside>
       {%- endif %}
     </div>
+
+    <footer class="site-footer">
+      <p class="site-footer-credit">
+        Developed by
+        <a href="{{ site.author.url }}" target="_blank" rel="noopener">{{ site.author.name }}</a>
+        · Backed by
+        <a href="{{ site.sponsor.url }}" target="_blank" rel="noopener">{{ site.sponsor.name }}</a>
+      </p>
+    </footer>
 
     <script src="{{ '/assets/theme.js' | url }}"></script>
   </body>

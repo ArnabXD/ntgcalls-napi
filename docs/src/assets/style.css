@@ -638,8 +638,63 @@ blockquote p:last-child {
   line-height: 1.55;
 }
 
-/* ---------- Footer ---------- */
-.page-footer {
+/* ---------- Home: next steps + credits ---------- */
+.next-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.next-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+}
+.next-list li:last-child {
+  border-bottom: none;
+}
+.next-list li a {
+  flex: 0 0 9.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.next-list li span {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+.credits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+.credits-list li {
+  padding-left: 1rem;
+  border-left: 2px solid var(--border);
+  margin: 0 0 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.credits-list li a {
+  font-weight: 500;
+}
+@media (max-width: 600px) {
+  .next-list li {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .next-list li a {
+    flex: none;
+  }
+}
+
+/* ---------- Per-page meta line ---------- */
+.page-meta {
   max-width: var(--max-content);
   margin: 3.5rem auto 0;
   padding-top: 1.5rem;
@@ -652,11 +707,33 @@ blockquote p:last-child {
   gap: 0.6rem;
   align-items: center;
 }
-.page-footer a {
+.page-meta a {
   color: var(--text-muted);
 }
-.page-footer a:hover {
+.page-meta a:hover {
   color: var(--text);
+}
+
+/* ---------- Site-wide footer band (credit only) ---------- */
+.site-footer {
+  border-top: 1px solid var(--border);
+  background: var(--bg-alt);
+  padding: 1.4rem 2rem;
+}
+.site-footer-credit {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+}
+.site-footer-credit a {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.site-footer-credit a:hover {
+  color: var(--accent);
 }
 
 /* ---------- Responsive ---------- */
