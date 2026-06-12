@@ -15,8 +15,13 @@
     "format": "cargo fmt",
     "build": "napi build --release --dts binding.d.ts",
     "changelog": "npx git-cliff -o CHANGELOG.md",
-    "release": "bash scripts/release.sh"
+    "release": "bash scripts/release.sh",
+    "docs:dev": "npm run dev --workspace docs",
+    "docs:build": "npm run build --workspace docs"
   },
+  "workspaces": [
+    "docs"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/ArnabXD/ntgcalls-napi"

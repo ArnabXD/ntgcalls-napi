@@ -1,0 +1,15 @@
+{
+  "name": "ntgcalls-napi-docs",
+  "version": "0.0.0",
+  "description": "Documentation site for @arnabxd/ntgcalls-napi",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "eleventy --serve",
+    "build": "eleventy"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.0.0",
+    "@11ty/eleventy-plugin-syntaxhighlight": "^5.0.0"
+  }
+}

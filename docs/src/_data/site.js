@@ -1,0 +1,6 @@
+export default {
+  title: "@arnabxd/ntgcalls-napi",
+  tagline: "Thread-safe Rust N-API bindings for libntgcalls",
+  repo: "https://github.com/ArnabXD/ntgcalls-napi",
+  npm: "https://www.npmjs.com/package/@arnabxd/ntgcalls-napi",
+};

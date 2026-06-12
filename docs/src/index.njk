@@ -1,0 +1,74 @@
+---
+layout: base.njk
+title: Home
+permalink: /
+---
+
+<div class="hero">
+  <div class="eyebrow">
+    <span class="seg">RUST</span> · N-API · WEBRTC
+    <span class="bar"></span>
+  </div>
+
+  <h1>Native call bindings,<br />engineered for <em>Node.js</em>.</h1>
+
+  <p class="lede">
+    Thread-safe Rust N-API bindings for <code>libntgcalls</code> — the C-shared WebRTC library.
+    Promise-based, EventEmitter-native, zero <code>LD_LIBRARY_PATH</code>. Works on Node.js and Bun.
+  </p>
+
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="{{ '/quick-start/' | url }}">Quick Start <span aria-hidden="true">→</span></a>
+    <a class="btn btn-ghost" href="{{ '/api-reference/' | url }}">API Reference</a>
+    <a class="btn btn-ghost" href="{{ site.repo }}" target="_blank" rel="noopener">GitHub</a>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="dots"><span></span><span></span><span></span></span>
+      <span class="fname">terminal</span>
+    </div>
+    <pre class="terminal-body"><span class="tok-cmd">$</span> npm install @arnabxd/ntgcalls-napi
+<span class="tok-com"># prebuilt binaries · linux · macos · windows</span></pre>
+  </div>
+</div>
+
+<div class="eyebrow"><span class="seg">WHY</span><span class="bar"></span></div>
+
+<div class="specs">
+  <div class="spec">
+    <div class="num">01</div>
+    <h3>Thread-safe callbacks</h3>
+    <p>Background native WebRTC thread events become event-loop tasks via N-API ThreadsafeFunction — crash-free.</p>
+  </div>
+  <div class="spec">
+    <div class="num">02</div>
+    <h3>Promise-based API</h3>
+    <p>Heavy operations delegated to a Tokio threadpool through safe one-shot synchronization channels.</p>
+  </div>
+  <div class="spec">
+    <div class="num">03</div>
+    <h3>Smart ID mapping</h3>
+    <p>Accepts a number or a bigint for Telegram chat/user IDs interchangeably — no manual conversions.</p>
+  </div>
+  <div class="spec">
+    <div class="num">04</div>
+    <h3>RPATH isolation</h3>
+    <p>Resolves libntgcalls relative to the addon directory — no LD_LIBRARY_PATH needed, on any platform.</p>
+  </div>
+</div>
+
+## Where to next
+
+- **[Overview](/overview/)** — the architecture and core concepts behind the bindings.
+- **[Quick Start](/quick-start/)** — a complete, runnable example from session create to teardown.
+- **[Data Structures](/data-structures/)** — every TypeScript interface the package exposes.
+- **[API Reference](/api-reference/)** — global functions, the `NtgCalls` class, events, and methods.
+- **[Best Practices](/best-practices/)** — event-loop hygiene, graceful state, and BigInt handling.
+
+## Credits
+
+- **[ntgcalls](https://github.com/pytgcalls/ntgcalls)** — the native C/C++ WebRTC library by the
+  [pytgcalls](https://github.com/pytgcalls) team that this package binds to.
+- **[TgMusicBot](https://github.com/AshokShau/TgMusicBot)** by
+  [Ashok Shau](https://github.com/AshokShau) — referenced for the call lifecycle and signaling flow.

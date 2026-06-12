@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% if title and title != "Home" %}{{ title }} · {{ site.title }}{% else %}{{ site.title }} · {{ site.tagline }}{% endif %}</title>
+    <meta name="description" content="{{ description or site.tagline }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ '/assets/style.css' | url }}" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='7' fill='%232bb673'/></svg>"
+    />
+    <script>
+      // Apply saved theme before paint to avoid a flash. Dark is the default.
+      (function () {
+        try {
+          var t = localStorage.getItem("theme");
+          if (t) document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden />
+    <header class="topbar">
+      <label for="nav-toggle" class="nav-burger" aria-label="Toggle navigation">☰</label>
+      <span class="status-dot" aria-hidden="true"></span>
+      <a class="brand" href="{{ '/' | url }}"><span class="at">@arnabxd/</span>ntgcalls-napi</a>
+      <span class="topbar-spacer"></span>
+      <span class="topbar-meta">v{{ lib.version }}</span>
+      <a class="topbar-link" href="{{ site.npm }}" target="_blank" rel="noopener">npm</a>
+      <a class="topbar-link" href="{{ site.repo }}" target="_blank" rel="noopener">GitHub</a>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme" type="button">◐</button>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <nav>
+          {%- set groups = ["Guide", "Reference"] %}
+          {%- for grp in groups %}
+          <div class="nav-group">
+            <p class="nav-group-label">{{ grp }}</p>
+            {%- if grp == "Guide" %}
+            <a class="nav-link {% if page.url == ('/' | url) %}active{% endif %}" href="{{ '/' | url }}">
+              <span class="idx">00</span> Home
+            </a>
+            {%- endif %}
+            {%- for item in collections.docs %}
+            {%- if item.data.group == grp %}
+            <a class="nav-link {% if page.url == item.url %}active{% endif %}" href="{{ item.url | url }}">
+              <span class="idx">{{ item.data.order | pad2 }}</span> {{ item.data.title }}
+            </a>
+            {%- endif %}
+            {%- endfor %}
+          </div>
+          {%- endfor %}
+        </nav>
+      </aside>
+
+      <main class="content">
+        <article>
+          {%- if eyebrow and title != "Home" %}
+          <div class="eyebrow">
+            <span class="seg">{{ order | pad2 }}</span> {{ eyebrow }}
+            <span class="bar"></span>
+          </div>
+          {%- endif %}
+          {{ content | safe }}
+          <footer class="page-footer">
+            <a href="{{ site.repo }}" target="_blank" rel="noopener">Edit on GitHub</a>
+            <span>·</span>
+            <span>MIT</span>
+            <span>·</span>
+            <span>v{{ lib.version }}</span>
+          </footer>
+        </article>
+      </main>
+
+      {%- set headings = content | toc %}
+      {%- if headings.length and title != "Home" %}
+      <aside class="toc">
+        <p class="toc-label">On this page</p>
+        <nav>
+          {%- for h in headings %}
+          <a class="{% if h.level == 3 %}h3{% endif %}" href="#{{ h.id }}">{{ h.text }}</a>
+          {%- endfor %}
+        </nav>
+      </aside>
+      {%- endif %}
+    </div>
+
+    <script src="{{ '/assets/theme.js' | url }}"></script>
+  </body>
+</html>
