@@ -2,55 +2,36 @@
 title: Overview
 order: 1
 group: Guide
-eyebrow: Architecture
-description: Architecture and core concepts of the ntgcalls-napi bindings.
+eyebrow: Start here
+description: What ntgcalls-napi is, what you need before using it, and how the pieces fit.
 ---
 
-# Architectural Overview
+# Overview
 
-This package provides native, thread-safe, high-performance Node-API (N-API) bindings in Rust
-for `libntgcalls` (the native WebRTC C-shared library). It wraps the native code into a robust,
-non-blocking asynchronous architecture optimized for Node.js:
+`@arnabxd/ntgcalls-napi` lets your Node.js or Bun app join Telegram group voice/video chats and
+stream media into them. It's a thin, thread-safe binding over
+[`libntgcalls`](https://github.com/pytgcalls/ntgcalls) — the native WebRTC engine that does the
+actual audio/video work.
 
-```text
-┌────────────────────────────────────────────────────────┐
-│                      Node.js / JS                      │
-│   Event Loop / Main Thread (JavaScript / TypeScript)   │
-└───────────────────────────┬────────────────────────────┘
-     ▲                       │                       │
-     │ Thread-safe           │ Async Promises        │ Callback Register
-     │ Callbacks             ▼                       ▼
-┌────┴───────────────────────────────────────────────────┐
-│                    N-API FFI Wrapper                   │
-│        (Safe Rust Integration, thread-safe-fns)        │
-└───────────────────────────┬────────────────────────────┘
-     ▲                       │                       │
-     │ Native Worker         │ spawn_blocking        │ C FFI
-     │ Signals               ▼                       ▼
-┌────┴───────────────────────────────────────────────────┐
-│                      libntgcalls                       │
-│    Background C++ WebRTC Threads, Key Exchange, etc.    │
-└────────────────────────────────────────────────────────┘
-```
+It handles **media**: encoding your audio/video, the WebRTC transport, and the call lifecycle. It
+does **not** talk to Telegram's API. You bring that part yourself.
 
-## Key Architectural Concepts
+## What you need first
 
-- **Thread Safety** — WebRTC signaling and media processing run on background native C++ threads.
-  To safely deliver notifications to JavaScript, the wrapper uses N-API `ThreadsafeFunction`
-  channels, converting native thread dispatches into event-loop tasks.
+> [!IMPORTANT]
+> You need an **MTProto library logged in as a regular user account** — not a bot. Bots cannot join
+> voice chats. Use [MTKruto](https://mtkru.to), [GramJS](https://gram.js.org), or any MTProto client.
 
-- **Non-Blocking Async** — Heavy operations (e.g. SDP generation, key exchange) are delegated to a
-  Tokio threadpool via `spawn_blocking` with safe one-shot synchronization channels.
+The two halves of a call:
 
-- **BigInt Representation** — Telegram Chat IDs, User IDs, and WebRTC timestamps may be supplied as
-  either a JavaScript `number` or a `bigint` (`number | bigint`). The JS wrapper coerces `bigint`
-  arguments to `Number` at the N-API boundary, since napi-rs v3 expects a JS `Number` at runtime for
-  `i64` parameters — this is safe because Telegram IDs fit within `Number.MAX_SAFE_INTEGER`
-  (2^53 − 1). Values returned by the library (e.g. `time()`) are still `bigint`.
+| Piece | Who does it | Examples |
+| --- | --- | --- |
+| **Signaling** — join the call, exchange the SDP offer/answer with Telegram | Your MTProto library | MTKruto, GramJS |
+| **Media** — produce the audio/video, run the WebRTC connection | This package | `NtgCalls` |
 
-- **Memory Safety** — Wrapper context allocations (e.g. C-string parameters, vector structures) are
-  maintained in native heap context structures (`Keeper` types) and safely freed automatically once
-  native callbacks complete.
+The flow is always: **this package makes an offer → your MTProto lib joins the call with it and
+returns Telegram's answer → this package connects with that answer → you push media.** The
+[Quick Start](/quick-start/) walks through it end to end.
 
 ## Installation
 
@@ -58,17 +39,28 @@ non-blocking asynchronous architecture optimized for Node.js:
 npm install @arnabxd/ntgcalls-napi
 ```
 
-The platform-specific binary is automatically downloaded at postinstall time, so compilation is not
-required under normal use. Prebuilt binaries are published for Linux, macOS, and Windows.
+The right prebuilt binary (Linux, macOS, Windows) is downloaded automatically on install — no
+compiler or `LD_LIBRARY_PATH` setup needed.
 
-### Building from source
+You'll also need **ffmpeg** on the host, since the common way to feed media is to let ntgcalls run an
+ffmpeg command and read raw frames from its output (see [Quick Start](/quick-start/)).
 
-If you need to compile the native addon yourself:
+## Good to know
+
+- **IDs accept `number` or `bigint`.** Pass `chatId` / `userId` either way — `-1001234567890n` or
+  `-1001234567890` both work. Values the library returns (like `time()`) come back as `bigint`.
+- **It's an EventEmitter.** `NtgCalls` extends Node's `EventEmitter`, so call state, incoming
+  frames, and stream-end notifications arrive as ordinary events. Register listeners *before* you
+  start a call.
+- **Everything async is a Promise.** `create`, `connect`, `set_stream_sources`, etc. return
+  promises; heavy native work runs off the main thread so your event loop stays responsive.
+
+## Building from source
+
+You only need this if you're hacking on the binding itself:
 
 1. Install **Rust & Cargo**.
-2. Download the platform-appropriate `libntgcalls` shared library
-   (`libntgcalls.so` / `libntgcalls.dylib` / `ntgcalls.dll`) from the
-   [ntgcalls releases](https://github.com/pytgcalls/ntgcalls/releases/latest) and place it in
-   `./lib/`.
-3. Run `npm run build`, which invokes `@napi-rs/cli` to compile the Rust crate and output
-   `ntgcalls.node` in the package root.
+2. Download the matching `libntgcalls` shared library
+   (`libntgcalls.so` / `.dylib` / `ntgcalls.dll`) from the
+   [ntgcalls releases](https://github.com/pytgcalls/ntgcalls/releases/latest) into `./lib/`.
+3. Run `npm run build` to compile the crate into `ntgcalls.node`.

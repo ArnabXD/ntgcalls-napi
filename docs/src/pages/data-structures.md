@@ -6,9 +6,10 @@ eyebrow: Interfaces
 description: Every TypeScript interface exposed by the package.
 ---
 
-# Data Structures & Interfaces
+# Data Structures
 
-Below is the complete set of TypeScript interfaces exposed by the package.
+Every TypeScript interface the package exports. They're fully typed, so your editor will surface
+these inline — this page is the at-a-glance reference.
 
 ## Media Description Configuration
 
@@ -140,7 +141,7 @@ export interface CallInfo {
 }
 ```
 
-## Logging Configuration
+## Logging
 
 ```typescript
 export interface LogMessage {

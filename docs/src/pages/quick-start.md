@@ -3,62 +3,155 @@ title: Quick Start
 order: 2
 group: Guide
 eyebrow: Walkthrough
-description: A complete example from session creation to graceful teardown.
+description: Join a Telegram group call and stream audio or video, end to end.
 ---
 
 # Quick Start
 
-Here is a full example showing how to initialize `NtgCalls`, configure connection state handlers,
-start a WebRTC session, change streams, and gracefully clean up.
+This page takes you from nothing to audio playing in a group call, then adds video. Make sure you've
+read the [prerequisites](/overview/#what-you-need-first) — you need an MTProto library logged in as a
+**user account** and **ffmpeg** installed.
 
-```typescript
-import { NtgCalls, get_version, register_logger } from '@arnabxd/ntgcalls-napi';
+The call always follows the same four steps:
 
-// 1. (Optional) Register Global Native Logger
-register_logger((log) => {
-  console.log(`[Native FFI Log] [Level ${log.level}] ${log.file}:${log.line} - ${log.message}`);
-});
+1. **Create** a call context and get a WebRTC offer.
+2. **Join** the group call through your MTProto lib, passing that offer, and get Telegram's answer.
+3. **Connect** with the answer to finish the handshake.
+4. **Stream** media into the call.
 
-console.log('Using ntgcalls FFI version:', get_version());
+## Audio
 
-// 2. Initialize the Calls Client
+### 1. Create the context
+
+```js
+import { NtgCalls } from '@arnabxd/ntgcalls-napi';
+
 const ntg = new NtgCalls();
 
-// 3. Register Event Listeners (EventEmitter Style)
+// Register listeners before the call starts.
 ntg.on('connection-change', (chatId, kind, state) => {
-  console.log(`Connection Changed on Chat ${chatId} | Kind: ${kind} | State: ${state}`);
+  console.log(`call ${chatId}: kind=${kind} state=${state}`);
 });
 
-ntg.on('stream-end', (chatId, streamType, streamDevice) => {
-  console.log(`Playback finished on Chat ${chatId} | Type: ${streamType} | Device: ${streamDevice}`);
+const offer = await ntg.create(chatId); // WebRTC offer SDP
+```
+
+### 2. Join the call with your MTProto lib
+
+You hand the offer to Telegram and get an answer back. Do this with whatever MTProto client you use:
+
+```js
+// MTKruto
+const answer = await client.joinVideoChat(videoChatId, offer, {
+  isAudioEnabled: true,
+  isVideoEnabled: false,
 });
+```
 
-// 4. Create a WebRTC Session
-const chatId = 1001185324811n; // Native BigInt representation
-const offerSdp = await ntg.create(chatId);
-console.log('WebRTC Offer SDP generated:\n', offerSdp);
+```js
+// GramJS — phone.joinGroupCall, offer goes in `params`, result is the answer
+const result = await client.invoke(
+  new Api.phone.JoinGroupCall({
+    call: inputGroupCall,
+    params: new Api.DataJSON({ data: offer }),
+    muted: false,
+    joinAs: 'me',
+  }),
+);
+const answer = /* the DataJSON answer from `result` */;
+```
 
-// 5. Connect Session using Answer SDP
-const answerSdp = 'v=0...'; // The answer SDP retrieved from Telegram
-await ntg.connect(chatId, answerSdp, false);
+### 3. Connect
 
-// 6. Play Audio Stream using shell-based FFmpeg input
-const ffmpegCommand = 'ffmpeg -i input.mp3 -f s16le -ac 1 -ar 48000 pipe:1';
-await ntg.set_audio_source(chatId, ffmpegCommand);
+```js
+await ntg.connect(chatId, answer, false); // `false` = not a presentation/screen share
+```
 
-// 7. Mute / Pause Controls
-await ntg.pause(chatId);
-await ntg.resume(chatId);
-await ntg.mute(chatId);
-await ntg.unmute(chatId);
+### 4. Play audio
 
-// 8. Graceful Stop
+`set_audio_source` is the shortcut for the mic-only case. It runs your ffmpeg command in **SHELL
+mode** and reads raw `s16le` 48 kHz mono audio from its stdout:
+
+```js
+await ntg.set_audio_source(
+  chatId,
+  `ffmpeg -i "${url}" -vn -f s16le -ar 48000 -ac 1 -`,
+);
+```
+
+That's a full audio call. To stop:
+
+```js
 await ntg.stop(chatId);
 ```
 
-> [!IMPORTANT]
-> Always register event listeners **before** initiating a call session with `create()` or
-> `connect()`.
+## Video
 
-Next, browse the [Data Structures](/data-structures/) reference for every interface used above, or
-jump to the full [API Reference](/api-reference/).
+Video isn't a separate method — `set_audio_source` is just a shortcut. For video you use
+`set_stream_sources` with both a `microphone` and a `camera` description.
+
+> [!IMPORTANT]
+> Enable video **at join time**. If you join audio-only you can't hot-swap video in later — you have
+> to stop and re-join with video enabled. So set `isVideoEnabled: true` in step 2.
+
+```js
+// Step 2, with video enabled (MTKruto)
+const answer = await client.joinVideoChat(videoChatId, offer, {
+  isAudioEnabled: true,
+  isVideoEnabled: true,
+});
+```
+
+Then, instead of `set_audio_source`, push two tracks — one ffmpeg command each:
+
+```js
+await ntg.set_stream_sources(chatId, 0 /* capture */, {
+  microphone: {
+    mediaSource: 2, // SHELL
+    input: `ffmpeg -i "${url}" -vn -f s16le -ar 48000 -ac 1 -`,
+    sampleRate: 48000,
+    channelCount: 1,
+    keepOpen: false,
+  },
+  camera: {
+    mediaSource: 2, // SHELL
+    input: `ffmpeg -i "${url}" -an -f rawvideo -pix_fmt yuv420p -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30" -`,
+    width: 1280,
+    height: 720,
+    fps: 30,
+    keepOpen: false,
+  },
+});
+```
+
+> [!WARNING]
+> The raw frames ffmpeg produces must match the `width` × `height` you declare **exactly**. That's
+> what the `scale=…,pad=…` filter is for: it fits any source into a fixed 1280×720 canvas. Get this
+> wrong and you'll see garbled or rejected video.
+
+`mediaSource: 2` is SHELL mode — ntgcalls spawns the command and reads the track from its stdout.
+Audio is `s16le` 48 kHz; video is `rawvideo` `yuv420p`. The `streamMode` argument is `0` for capture
+(what you send) and `1` for playback.
+
+## Knowing when a track ends
+
+`set_audio_source` / `set_stream_sources` return as soon as streaming starts — they don't wait for
+the media to finish. Listen for `stream-end` to queue the next track (e.g. a music bot playlist):
+
+```js
+ntg.on('stream-end', (chatId, streamType, streamDevice) => {
+  if (streamType === 0) {
+    // 0 = audio track finished — play the next one
+    playNext(chatId);
+  }
+});
+```
+
+## A working reference
+
+For a complete, real-world bot built on this exact flow, see
+[**TGVCBot**](https://github.com/ArnabXD/TGVCBot) (branch `feature/bun-rewrite`) — look at
+`src/tgcalls.ts` and `src/ntgcalls/client.ts`.
+
+Next: the full [API Reference](/api-reference/), or [Best Practices](/best-practices/) for the
+gotchas worth knowing up front.

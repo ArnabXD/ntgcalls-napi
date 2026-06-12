@@ -3,45 +3,61 @@ title: Best Practices
 order: 5
 group: Reference
 eyebrow: Guidance
-description: Event-loop hygiene, graceful state transitions, and BigInt handling.
+description: The gotchas worth knowing before they bite you.
 ---
 
-# Integration Best Practices
+# Best Practices
 
-## A. JavaScript/TypeScript Event Loop Preservation
+## Enable video at join time
 
-Native callbacks invoke JavaScript asynchronously. Keep your callbacks **lightweight and fast**. If
-you need to perform intensive disk I/O or heavy networking on event notifications, delegate them to
-standard microtasks (using `setImmediate`, `setTimeout`, or secondary worker threads) to prevent
-stalling the main event loop.
+You can't add video to a call you joined audio-only. If you might stream video, set
+`isVideoEnabled: true` when your MTProto lib joins the call. To switch an existing audio-only call to
+video, you have to `stop()` and re-join.
 
-## B. Muting / Pausing Graceful States
+## Match the frame size exactly
 
-When a track finishes, the `stream-end` callback fires. Clients must capture this state to queue the
-next audio track in their music-bot playlist.
+Raw video frames must be exactly the `width` × `height` you declare in the `camera` description. Any
+mismatch produces garbled or rejected video. Always normalize the source to a fixed canvas in your
+ffmpeg filter:
 
-> [!TIP]
-> Mute or stop playback **before** issuing a secondary `set_stream_sources` or `set_audio_source`
-> payload, to prevent audio buffer overlapping or clicking sounds in the voice chat channel.
+```text
+-vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30"
+```
 
-## C. BigInt Handling
+## Mute before swapping tracks
 
-ID and timestamp arguments (`chatId`, `userId`, `fingerprint`, broadcast timestamps, etc.) accept
-either a `number` or a `bigint` (`number | bigint`). Internally the JS wrapper coerces any `bigint`
-you pass to a standard `Number` before crossing the N-API boundary, because napi-rs v3 requires a JS
-`Number` at runtime for `i64` arguments. This is safe: Telegram IDs stay within
-`Number.MAX_SAFE_INTEGER` (2^53 − 1), well below the `i64` range used natively.
+When changing what's playing, `mute()` (or `pause()`) **before** the next `set_stream_sources` /
+`set_audio_source` call. Swapping a live track directly can overlap audio buffers and cause clicks in
+the voice chat.
 
-You may therefore pass `1234567890n`, `BigInt("chat_id_string")`, or a plain `1234567890`
-interchangeably. Return values that the native library produces (such as `time()`) come back as
+## Use `stream-end` to drive a playlist
+
+`set_audio_source` and `set_stream_sources` resolve when streaming *starts*, not when the media ends.
+Listen for `stream-end` to know a track finished and play the next:
+
+```js
+ntg.on('stream-end', (chatId, streamType) => {
+  if (streamType === 0) playNext(chatId); // 0 = audio
+});
+```
+
+## Keep event handlers light
+
+Events are delivered to your JS callbacks from native threads via the event loop. Do the minimum in
+the handler — if you need heavy I/O or networking in response, hand it off with `setImmediate`,
+`queueMicrotask`, or a worker so you don't stall the loop while more events arrive.
+
+## IDs: `number` or `bigint`, your choice
+
+Pass `chatId` / `userId` / `fingerprint` as either. The wrapper coerces a `bigint` to `Number` at
+the boundary (napi-rs v3 expects a JS `Number` for `i64`), which is safe because Telegram IDs stay
+within `Number.MAX_SAFE_INTEGER` (2⁵³ − 1). Values the library returns (like `time()`) come back as
 `bigint`.
 
-```typescript
-// All three are equivalent at the call boundary:
-await ntg.create(1234567890n);
-await ntg.create(BigInt("1234567890"));
-await ntg.create(1234567890);
+```js
+await ntg.create(-1001234567890n);            // bigint
+await ntg.create(-1001234567890);             // number
+await ntg.create(BigInt('-1001234567890'));   // bigint from string
 
-// Returned values are bigint:
-const elapsed: bigint = await ntg.time(1234567890n);
+const elapsed = await ntg.time(chatId);       // -> bigint
 ```

@@ -3,181 +3,181 @@ title: API Reference
 order: 4
 group: Reference
 eyebrow: Reference
-description: Global functions, the NtgCalls class, events, and methods.
+description: Every function, event, and method, grouped by what you use it for.
 ---
 
 # API Reference
 
-## Global Utility Functions
+All `chatId` / `userId` parameters accept a `number` or a `bigint`. Methods are `async` and return
+Promises. For how these fit together, see the [Quick Start](/quick-start/).
 
-#### `register_logger(cb: (message: LogMessage) => void): void`
+## Constants
 
-Registers a global logger callback to receive native events and logs from `libntgcalls`. Highly
-recommended for debugging signaling or WebRTC transport issues.
+These are plain numbers — pass the integer value. Listed here because the methods below reference
+them.
 
-#### `get_version(): string`
+| Group | Values |
+| --- | --- |
+| **Stream mode** (`set_stream_sources`) | `0` capture (what you send) · `1` playback |
+| **Media source** (`mediaSource`) | `1` file · `2` shell · `4` ffmpeg · `8` device · `16` desktop · `32` external |
+| **Stream device** (`streamDevice` in events) | `0` microphone · `1` speaker · `2` camera · `3` screen |
+| **Stream type** (`streamType` in `stream-end`) | `0` audio · `1` video |
 
-Returns the version of `libntgcalls` currently linked.
+## Global functions
 
-#### `get_protocol(): Protocol`
+| Function | Description |
+| --- | --- |
+| `register_logger(cb)` | Receive native logs from `libntgcalls` (see [`LogMessage`](/data-structures/#logging)). Useful when debugging signaling or transport. |
+| `get_version()` | The linked `libntgcalls` version, as a string. |
+| `get_protocol()` | The WebRTC layers and capabilities the native library supports (see [`Protocol`](/data-structures/#protocol-device-queries)). |
+| `get_media_devices()` | Enumerate local mics, speakers, cameras, and capture devices. |
+| `enable_g_lib_loop(enable)` | Toggle GLib main-loop integration. Only relevant on some Linux desktop hosts; leave off unless you know you need it. |
 
-Retrieves WebRTC layers, capabilities, and version signatures supported by the native library.
+## Events
 
-#### `get_media_devices(): MediaDevices`
-
-Queries the hardware for available input/output devices (microphones, speakers, webcams, capture
-devices).
-
-#### `enable_g_lib_loop(enable: boolean): void`
-
-Toggles GLib main loop integration. Use with discretion depending on native hosting targets.
-
----
-
-## `NtgCalls` Class
-
-### Events
-
-`NtgCalls` extends the standard Node.js `EventEmitter`. Register listeners with
-`.on('event-name', callback)`.
+`NtgCalls` is an `EventEmitter`. Register listeners with `.on('event', cb)`.
 
 > [!IMPORTANT]
-> Always register event listeners **before** initiating a call session with `create()` or
-> `connect()`.
+> Register listeners **before** calling `create()` or `connect()`, or you'll miss early events.
 
-| Event | Callback signature | Description |
+| Event | Arguments | When it fires |
 | --- | --- | --- |
-| `'stream-end'` | `(chatId: bigint, streamType: number, streamDevice: number) => void` | Triggers when a playback stream is exhausted or terminated. |
-| `'upgrade'` | `(chatId: bigint, state: MediaState) => void` | Fires when stream characteristics or muted states are toggled. |
-| `'connection-change'` | `(chatId: bigint, kind: number, state: number) => void` | Fires when WebRTC connectivity states shift. |
-| `'signaling-data'` | `(chatId: bigint, data: Buffer) => void` | Fires when new signaling parameters are ready to dispatch to remote participants. |
-| `'frames'` | `(chatId: bigint, mode: number, device: number, frames: Array<Frame>) => void` | Delivers raw incoming media frames captured by WebRTC components. |
-| `'remote-source-change'` | `(chatId: bigint, source: RemoteSource) => void` | Fires when a remote participant alters their media device settings. |
-| `'request-broadcast-timestamp'` | `(chatId: bigint) => void` | Requested when synchronizing broadcast components. |
-| `'request-broadcast-part'` | `(chatId: bigint, request: SegmentPartRequest) => void` | Triggers when broadcast streaming demands chunk updates. |
+| `stream-end` | `(chatId, streamType, streamDevice)` | A track finished playing. Use it to queue the next one. `streamType`: `0` audio, `1` video. |
+| `connection-change` | `(chatId, kind, state)` | The WebRTC connection state changed (connecting, connected, failed, closed). |
+| `upgrade` | `(chatId, state)` | Mute/video flags changed — `state` is a [`MediaState`](/data-structures/#webrtc-media-streaming-structures). |
+| `signaling-data` | `(chatId, data)` | P2P only — outgoing signaling bytes to relay to the peer. |
+| `frames` | `(chatId, mode, device, frames)` | Decoded incoming media frames (only if you opted into receiving them). |
+| `remote-source-change` | `(chatId, source)` | A remote participant changed a track — `source` is a [`RemoteSource`](/data-structures/#webrtc-media-streaming-structures). |
+| `request-broadcast-timestamp` | `(chatId)` | Broadcast source: the library wants the current segment timestamp. |
+| `request-broadcast-part` | `(chatId, request)` | Broadcast source: the library wants a specific chunk — `request` is a [`SegmentPartRequest`](/data-structures/#webrtc-media-streaming-structures). |
 
----
+## Joining & connecting
 
-### Active Session Operations
+#### `create(chatId): Promise<string>`
 
-#### `create(chatId: number | bigint): Promise<string>`
+Creates the call context and returns a **WebRTC offer (SDP)**. Step 1 of the flow — hand this offer
+to your MTProto library to join the call.
 
-Initializes a calls context for a designated chat and returns an **Offer SDP** string.
+#### `connect(chatId, params, isPresentation): Promise<void>`
 
-#### `connect(chatId: number | bigint, params: string, isPresentation: boolean): Promise<void>`
+Finishes the handshake using the **answer** (`params`) you got back from Telegram. Pass
+`isPresentation: false` for a normal call; `true` for a screen-share/presentation answer.
 
-Completes the WebRTC handshake using the remote **Answer SDP** string (`params`).
+#### `init_presentation(chatId): Promise<string>`
 
-#### `init_presentation(chatId: number | bigint): Promise<string>`
+Starts a screen-share alongside the active call and returns a second offer to join as a
+presentation. Pair the resulting answer with `connect(..., true)`.
 
-Starts presentation/screen sharing within the active session, generating a secondary Offer SDP.
+#### `stop_presentation(chatId): Promise<void>`
 
-#### `stop_presentation(chatId: number | bigint): Promise<void>`
+Stops the active presentation track.
 
-Terminates the active presentation stream.
+## Streaming media
 
----
+#### `set_stream_sources(chatId, streamMode, desc): Promise<void>`
 
-### Stream Control Operations
+The general way to set tracks. `desc` is a [`MediaDescription`](/data-structures/#media-description-configuration)
+with any of `microphone` / `speaker` / `camera` / `screen`. `streamMode` is `0` (capture) for what
+you send. See the [video walkthrough](/quick-start/#video).
 
-#### `set_stream_sources(chatId: number | bigint, streamMode: number, desc: MediaDescription): Promise<void>`
+#### `set_audio_source(chatId, ffmpegCmd): Promise<void>`
 
-Sets the primary microphone, speaker, camera, and screen streams in `streamMode`
-(0 = CAPTURE, 1 = PLAYBACK).
+Shortcut for the mic-only case: runs `ffmpegCmd` in SHELL mode and reads `s16le` 48 kHz mono audio
+from its stdout. Equivalent to `set_stream_sources` with just a `microphone` description.
 
-#### `set_audio_source(chatId: number | bigint, ffmpegCmd: string): Promise<void>`
+#### `pause(chatId)` · `resume(chatId)`
 
-Convenience wrapper that configures raw shell execution to feed audio playback to the session.
+Pause or resume the outgoing stream.
 
-#### `pause(chatId: number | bigint): Promise<void>`
+#### `mute(chatId)` · `unmute(chatId)`
 
-Pauses active streaming on the specified chat.
+Mute or unmute. Prefer muting over stopping when you only want a brief silence — see
+[Best Practices](/best-practices/).
 
-#### `resume(chatId: number | bigint): Promise<void>`
+#### `stop(chatId): Promise<void>`
 
-Resumes streaming on the specified chat.
+Stops streaming and tears down the WebRTC connection for that chat.
 
-#### `mute(chatId: number | bigint): Promise<void>`
+#### `time(chatId, mode?): Promise<bigint>`
 
-Mutes the client.
+Elapsed playback time of the current media, in milliseconds.
 
-#### `unmute(chatId: number | bigint): Promise<void>`
+#### `get_state(chatId): Promise<MediaState>`
 
-Unmutes the client.
+Current mute/video flags — a [`MediaState`](/data-structures/#webrtc-media-streaming-structures).
 
-#### `stop(chatId: number | bigint): Promise<void>`
+#### `get_connection_mode(chatId): Promise<number>`
 
-Safely stops the stream and tears down WebRTC allocations for the designated chat.
+The active transport mode the connection negotiated.
 
-#### `time(chatId: number | bigint, mode?: number): Promise<bigint>`
+## Receiving video
 
-Returns the absolute elapsed playback time of active media.
+For pulling specific remote video tracks (e.g. forwarding someone's camera).
 
-#### `get_state(chatId: number | bigint): Promise<MediaState>`
+#### `add_incoming_video(chatId, endpoint, ssrcGroupsList): Promise<number>`
 
-Returns the current active media state structure (mute and video statuses).
+Subscribe to a remote video endpoint. `ssrcGroupsList` is an array of
+[`SsrcGroup`](/data-structures/#p2p-cryptography-exchange). Returns the assigned sink id.
 
-#### `get_connection_mode(chatId: number | bigint): Promise<number>`
+#### `remove_incoming_video(chatId, endpoint): Promise<void>`
 
-Returns the active transport mode (e.g. RTC, RTMP, etc.).
+Unsubscribe from that endpoint.
 
----
+#### `send_external_frame(chatId, device, data, frameData): Promise<void>`
 
-### Advanced Peer-to-Peer & Cryptography
+Push a raw frame you produced yourself into the camera/screen track, instead of letting ffmpeg do
+it. `frameData` is a [`FrameData`](/data-structures/#webrtc-media-streaming-structures).
 
-#### `create_p2p(userId: number | bigint): Promise<void>`
+## Peer-to-peer (1:1 calls)
 
-Initializes a direct P2P media context for a direct call session with `userId`.
+A separate flow from group calls, using Diffie-Hellman key exchange. Only needed for direct
+user-to-user calls.
 
-#### `init_exchange(userId: number | bigint, dhConfig: DhConfig, gAHash: Buffer): Promise<Buffer>`
+#### `create_p2p(userId): Promise<void>`
 
-Initializes Diffie-Hellman cryptographic exchange with a peer.
+Start a direct call context with `userId`.
 
-#### `exchange_keys(userId: number | bigint, gAOrB: Buffer, fingerprint: number | bigint): Promise<AuthParams>`
+#### `init_exchange(userId, dhConfig, gAHash): Promise<Buffer>`
 
-Completes the cryptographic handshake, generating the key fingerprint and auth values.
+Begin the DH key exchange. `dhConfig` is a [`DhConfig`](/data-structures/#p2p-cryptography-exchange).
 
-#### `skip_exchange(userId: number | bigint, encryptionKey: Buffer, isOutgoing: boolean): Promise<void>`
+#### `exchange_keys(userId, gAOrB, fingerprint): Promise<AuthParams>`
 
-Bypasses Diffie-Hellman exchange using a pre-negotiated secure encryption key.
+Finish the exchange; returns the shared [`AuthParams`](/data-structures/#p2p-cryptography-exchange).
 
-#### `connect_p2p(userId: number | bigint, rtcServers: Array<RtcServer>, versionsList: Array<string>, p2PAllowed: boolean): Promise<void>`
+#### `skip_exchange(userId, encryptionKey, isOutgoing): Promise<void>`
 
-Completes the connection setup for a direct P2P session.
+Skip DH entirely when you already have a negotiated key.
 
-#### `send_signaling_data(userId: number | bigint, data: Buffer): Promise<void>`
+#### `connect_p2p(userId, rtcServers, versionsList, p2PAllowed): Promise<void>`
 
-Feeds remote signaling credentials into the P2P connection tracker.
+Connect the P2P call. `rtcServers` is an array of
+[`RtcServer`](/data-structures/#p2p-cryptography-exchange).
 
-#### `add_incoming_video(chatId: number | bigint, endpoint: string, ssrcGroupsList: Array<SsrcGroup>): Promise<number>`
+#### `send_signaling_data(userId, data): Promise<void>`
 
-Registers an incoming video channel configuration from a remote participant.
+Feed signaling bytes received from the peer (the counterpart to the `signaling-data` event).
 
-#### `remove_incoming_video(chatId: number | bigint, endpoint: string): Promise<void>`
+## Broadcasting (RTMP-style sources)
 
-Deregisters the video channel associated with the endpoint.
+For acting as a broadcast source that serves media in segments on demand. Drive these from the
+`request-broadcast-*` events.
 
-#### `send_external_frame(chatId: number | bigint, device: number, data: Buffer, frameData: FrameData): Promise<void>`
+#### `send_broadcast_timestamp(chatId, timestamp): Promise<void>`
 
-Manually feeds a custom video frame payload (`data`) directly into the WebRTC camera or screen
-stream channel.
+Answer a `request-broadcast-timestamp` with the current segment timestamp.
 
-#### `send_broadcast_timestamp(chatId: number | bigint, timestamp: number | bigint): Promise<void>`
+#### `send_broadcast_part(chatId, segmentId, partId, status, qualityUpdate, data): Promise<void>`
 
-Broadcasters use this to push synchronized timestamps.
+Answer a `request-broadcast-part` with the requested chunk bytes.
 
-#### `send_broadcast_part(chatId: number | bigint, segmentId: number | bigint, partId: number, status: number, qualityUpdate: boolean, data: Buffer): Promise<void>`
-
-Feeds video broadcast chunks into active subscriber pipelines.
-
----
-
-### System Diagnostics
+## Diagnostics
 
 #### `cpu_usage(): Promise<number>`
 
-Returns the relative CPU usage fraction of the native library routines.
+Native CPU usage as a fraction (`0`–`1`).
 
 #### `calls(): Promise<Record<string, CallInfo>>`
 
-Returns a catalog mapping active Telegram chat IDs to their active capture/playback stream statuses.
+Map of active chat ids to their [`CallInfo`](/data-structures/#protocol-device-queries) (capture /
+playback status).
