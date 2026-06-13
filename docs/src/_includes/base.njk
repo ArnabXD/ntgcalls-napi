@@ -89,6 +89,12 @@
             {%- endfor %}
           </div>
           {%- endfor %}
+
+          <div class="nav-group sidebar-links">
+            <p class="nav-group-label">Links</p>
+            <a class="nav-link" href="{{ site.npm }}" target="_blank" rel="noopener">npm</a>
+            <a class="nav-link" href="{{ site.repo }}" target="_blank" rel="noopener">GitHub</a>
+          </div>
         </nav>
       </aside>
 
@@ -123,6 +129,8 @@
       </aside>
       {%- endif %}
     </div>
+
+    <label for="nav-toggle" class="nav-backdrop" aria-hidden="true"></label>
 
     <footer class="site-footer">
       <p class="site-footer-credit">

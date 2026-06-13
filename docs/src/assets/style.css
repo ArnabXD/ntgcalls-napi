@@ -804,9 +804,42 @@ blockquote p:last-child {
     display: none;
   }
 }
+/* The Links group in the drawer is mobile-only; on desktop npm/GitHub live in
+   the topbar. The backdrop only exists at mobile widths. */
+.sidebar-links {
+  display: none;
+}
+.nav-backdrop {
+  display: none;
+}
+
 @media (max-width: 820px) {
   .nav-burger {
     display: block;
+  }
+  /* Declutter the topbar: shorten the brand, drop redundant meta/links
+     (version lives in the per-page meta; npm/GitHub move into the drawer). */
+  .brand .at {
+    display: none;
+  }
+  .topbar-meta,
+  .topbar-link {
+    display: none;
+  }
+  .topbar {
+    gap: 0.6rem;
+    padding: 0 1rem;
+  }
+  .sidebar-links {
+    display: block;
+  }
+  /* Click-outside-to-dismiss backdrop, shown only when the drawer is open. */
+  .nav-toggle:checked ~ .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: var(--topbar-h) 0 0 0;
+    z-index: 24;
+    background: rgba(0, 0, 0, 0.45);
   }
   .sidebar {
     position: fixed;
