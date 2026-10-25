@@ -1,3 +1,8 @@
+> [!WARNING]
+> **Deprecated:** `@arnabxd/ntgcalls-napi` is no longer recommended for new projects. The upstream `ntgcalls` project now ships its own npm package, so you should use the official package instead. This wrapper may not receive further updates.
+>
+> Please migrate to [`ntgcalls`](https://www.npmjs.com/package/ntgcalls) for continued support and future updates.
+
 # @arnabxd/ntgcalls-napi
 
 [![npm Version](https://www.shieldcn.dev/npm/@arnabxd/ntgcalls-napi.svg?variant=secondary&theme=neutral&size=xs)](https://www.npmjs.com/package/@arnabxd/ntgcalls-napi)
